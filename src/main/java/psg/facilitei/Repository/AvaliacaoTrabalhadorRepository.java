@@ -22,4 +22,6 @@ public interface AvaliacaoTrabalhadorRepository extends JpaRepository<AvaliacaoT
     void deleteByTrabalhadorId(@Param("id") Long id);
 
     List<AvaliacaoTrabalhador> findByTrabalhadorId(Long trabalhadorId);
+
+    void deleteByClienteId(Long clienteId);
 }

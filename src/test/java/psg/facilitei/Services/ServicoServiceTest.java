@@ -15,17 +15,23 @@ import psg.facilitei.Entity.Cliente;
 import psg.facilitei.Entity.Enum.StatusServico;
 import psg.facilitei.Entity.Enum.TipoServico;
 import psg.facilitei.Entity.Servico;
+import psg.facilitei.Entity.SolicitacaoServico;
 import psg.facilitei.Entity.Trabalhador;
 import psg.facilitei.Exceptions.ResourceNotFoundException;
+import psg.facilitei.Repository.AvaliacaoServicoRepository;
 import psg.facilitei.Repository.ClienteRepository;
 import psg.facilitei.Repository.ServicoRepository;
+import psg.facilitei.Repository.SolicitacaoServicoRepository;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,6 +45,10 @@ class ServicoServiceTest {
     private TrabalhadorService trabalhadorService;
     @Mock
     private ClienteRepository clienteRepository;
+    @Mock
+    private AvaliacaoServicoRepository avaliacaoServicoRepository;
+    @Mock
+    private SolicitacaoServicoRepository solicitacaoServicoRepository;
 
     @InjectMocks
     private ServicoService servicoService;
@@ -113,6 +123,27 @@ class ServicoServiceTest {
         when(servicoRepository.existsById(42L)).thenReturn(false);
 
         assertThrows(ResourceNotFoundException.class, () -> servicoService.deletar(42L));
+
+        verify(avaliacaoServicoRepository, never()).deleteByServicoId(any());
+    }
+
+    @Test
+    void deletar_existente_removeAvaliacoesEDesvinculaSolicitacaoAntesDeDeletar() {
+        SolicitacaoServico solicitacao = new SolicitacaoServico();
+        solicitacao.setId(7L);
+        Servico servico = new Servico();
+        servico.setId(1L);
+        solicitacao.setServico(servico);
+
+        when(servicoRepository.existsById(1L)).thenReturn(true);
+        when(solicitacaoServicoRepository.findByServicoId(1L)).thenReturn(Optional.of(solicitacao));
+
+        servicoService.deletar(1L);
+
+        verify(avaliacaoServicoRepository).deleteByServicoId(1L);
+        assertNull(solicitacao.getServico());
+        verify(solicitacaoServicoRepository).save(solicitacao);
+        verify(servicoRepository).deleteById(1L);
     }
 
     @Test

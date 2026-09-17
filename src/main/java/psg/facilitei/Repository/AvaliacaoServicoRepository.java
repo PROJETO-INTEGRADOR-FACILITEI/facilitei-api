@@ -13,6 +13,10 @@ public interface AvaliacaoServicoRepository extends JpaRepository<AvaliacaoServi
 
     List<AvaliacaoServico> findByServicoId(Long servicoId);
 
+    void deleteByServicoId(Long servicoId);
+
+    void deleteByClienteId(Long clienteId);
+
     List<AvaliacaoServico> findByClienteId(Long clienteId);
 
     @Query("SELECT a FROM AvaliacaoServico a WHERE a.servico.trabalhador.id = :trabalhadorId")

@@ -11,8 +11,10 @@ import psg.facilitei.Entity.Servico;
 import psg.facilitei.Entity.Trabalhador;
 import psg.facilitei.Entity.Enum.StatusServico;
 import psg.facilitei.Exceptions.ResourceNotFoundException;
+import psg.facilitei.Repository.AvaliacaoServicoRepository;
 import psg.facilitei.Repository.ClienteRepository;
 import psg.facilitei.Repository.ServicoRepository;
+import psg.facilitei.Repository.SolicitacaoServicoRepository;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,6 +33,12 @@ public class ServicoService {
 
     @Autowired
     private ClienteRepository clienteRepository;
+
+    @Autowired
+    private AvaliacaoServicoRepository avaliacaoServicoRepository;
+
+    @Autowired
+    private SolicitacaoServicoRepository solicitacaoServicoRepository;
 
     public List<ServicoResponseDTO> listarTodos() {
         return servicoRepository.findAll()
@@ -99,6 +107,15 @@ public class ServicoService {
         if (!servicoRepository.existsById(id)) {
             throw new ResourceNotFoundException("Serviço não encontrado para exclusão.");
         }
+
+        // Remove avaliações vinculadas e desvincula a solicitação de origem
+        // para não violar as FKs que apontam para este serviço.
+        avaliacaoServicoRepository.deleteByServicoId(id);
+        solicitacaoServicoRepository.findByServicoId(id).ifPresent(solicitacao -> {
+            solicitacao.setServico(null);
+            solicitacaoServicoRepository.save(solicitacao);
+        });
+
         servicoRepository.deleteById(id);
     }
 

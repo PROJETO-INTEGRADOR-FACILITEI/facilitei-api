@@ -2,15 +2,19 @@ package psg.facilitei.Services;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import psg.facilitei.Controller.ClienteController;
 import psg.facilitei.DTO.*;
 import psg.facilitei.Entity.*;
+import psg.facilitei.Exceptions.BusinessRuleException;
 import psg.facilitei.Exceptions.ResourceNotFoundException;
 import psg.facilitei.Repository.AvaliacaoClienteRepository;
 import psg.facilitei.Repository.AvaliacaoServicoRepository;
+import psg.facilitei.Repository.AvaliacaoTrabalhadorRepository;
 import psg.facilitei.Repository.ClienteRepository;
 import psg.facilitei.Repository.ServicoRepository;
 
@@ -32,6 +36,9 @@ public class ClienteService {
 
     @Autowired
     private AvaliacaoServicoRepository avaliacaoServicoRepository;
+
+    @Autowired
+    private AvaliacaoTrabalhadorRepository avaliacaoTrabalhadorRepository;
 
     @Autowired
     private ServicoRepository servicoRepository;
@@ -168,12 +175,26 @@ public class ClienteService {
     }
 
     // ===================== EXCLUSÃO =====================
+    @Transactional
     public ResponseEntity<Void> delete(Long id) {
         logger.info("Deletando cliente com ID: " + id);
         if (!repository.existsById(id)) {
             throw new ResourceNotFoundException("Cliente não encontrado para exclusão com ID: " + id);
         }
-        repository.deleteById(id);
+
+        // Remove avaliações vinculadas ao cliente (como avaliador e como avaliado)
+        // para não violar as FKs que apontam para este cliente.
+        avaliacaoTrabalhadorRepository.deleteByClienteId(id);
+        avaliacaoClienteRepository.deleteByClienteId(id);
+        avaliacaoServicoRepository.deleteByClienteId(id);
+
+        try {
+            repository.deleteById(id);
+            repository.flush(); // força o DELETE a executar agora, para que a FKViolation seja capturada aqui
+        } catch (DataIntegrityViolationException e) {
+            throw new BusinessRuleException(
+                    "Não é possível excluir um cliente com serviços ou solicitações vinculadas.");
+        }
         return ResponseEntity.noContent().build();
     }
     public void atualizarNota(Long id, Double novaNota) {
