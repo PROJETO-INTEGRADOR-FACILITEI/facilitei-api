@@ -20,6 +20,8 @@ Este repositório contém exclusivamente o **back-end (Facilitei-Api)**, respons
 * **Avaliação de Cliente** (trabalhador avalia o cliente)
 * **Chat em tempo real entre Trabalhador e Cliente** (WebSocket/STOMP + histórico)
 * **Upload de arquivos/fotos** (Cloudinary)
+* **Portfólio de fotos do Trabalhador** (upload direto para o Cloudinary via API)
+* **Precificação de Serviços** (campo `preco` no cadastro/atualização de serviço)
 
 ---
 
@@ -30,11 +32,12 @@ Este repositório contém exclusivamente o **back-end (Facilitei-Api)**, respons
   * Spring Web, Spring Data JPA, Spring Data JDBC, Spring WebSocket, Spring Mail, Spring HATEOAS
 * **Build:** Maven (com Maven Wrapper `mvnw`)
 * **Banco de Dados:** MySQL (produção) · H2 em memória (testes)
+* **Versionamento de Schema:** Flyway (migrations em `src/main/resources/db/migration`)
 * **Mapeamento de Objetos:** ModelMapper
 * **Documentação da API:** springdoc-openapi / Swagger UI
 * **Armazenamento de Imagens:** Cloudinary
 * **Testes:** JUnit 5, Mockito, MockMvc, JaCoCo (cobertura)
-* **Infraestrutura:** Docker
+* **Infraestrutura:** Docker, Docker Compose
 
 ---
 
@@ -62,6 +65,7 @@ Facilitei-Api/
 │   │   │   │   ├── AvaliacaoTrabalhadorController.java
 │   │   │   │   ├── ClienteController.java
 │   │   │   │   ├── LiveChatController.java
+│   │   │   │   ├── PortfolioController.java
 │   │   │   │   ├── ServicoController.java
 │   │   │   │   ├── SolicitacaoServicoController.java
 │   │   │   │   └── TrabalhadorController.java
@@ -73,6 +77,7 @@ Facilitei-Api/
 │   │   │   ├── Services/                    # Regras de negócio
 │   │   │   └── FaciliteiApplication.java
 │   │   └── resources/
+│   │       ├── db/migration/                # Migrations Flyway (V1__create_tables.sql, V2__..., V3__...)
 │   │       ├── static/                      # Página estática de health-check
 │   │       └── application.properties
 │   └── test/
@@ -85,6 +90,7 @@ Facilitei-Api/
 │           └── application-test.properties  # Perfil de teste (H2)
 ├── .gitattributes
 ├── .gitignore
+├── docker-compose.yml
 ├── Dockerfile
 ├── mvnw & mvnw.cmd
 ├── pom.xml
@@ -129,9 +135,9 @@ Facilitei-Api/
 ### 🧰 Serviço — `/api/servicos`
 | Método | Endpoint | Descrição |
 |---|---|---|
-| POST | `/api/servicos` | Cria um novo serviço |
-| GET | `/api/servicos/{id}` | Busca serviço por ID |
-| PUT | `/api/servicos/{id}` | Atualiza um serviço existente |
+| POST | `/api/servicos` | Cria um novo serviço (inclui `preco`) |
+| GET | `/api/servicos/{id}` | Busca serviço por ID (retorna `preco`) |
+| PUT | `/api/servicos/{id}` | Atualiza um serviço existente (inclui `preco`) |
 | DELETE | `/api/servicos/{id}` | Remove um serviço |
 | GET | `/api/servicos/por-cliente/{clienteId}` | Lista serviços de um cliente |
 | GET | `/api/servicos?trabalhadorId=&clienteId=` | Lista todos os serviços, com filtro opcional por trabalhador ou cliente |
@@ -179,6 +185,17 @@ Facilitei-Api/
 |---|---|---|
 | POST | `/api/arquivos/upload` | Faz upload de um arquivo (multipart/form-data) para o Cloudinary e retorna a URL |
 
+### 🖼️ Portfolio — `/api/portfolios`
+*(galeria de fotos do trabalhador; um portfolio por trabalhador — a própria API faz o upload das imagens para o Cloudinary, reaproveitando o `CloudinaryService`)*
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| POST | `/api/portfolios` | Cria o portfolio de um trabalhador (multipart/form-data: `trabalhadorId` + `imagens`) |
+| GET | `/api/portfolios/{id}` | Busca um portfolio por ID |
+| GET | `/api/portfolios/trabalhador/{trabalhadorId}` | Busca o portfolio de um trabalhador |
+| POST | `/api/portfolios/{id}/imagens` | Adiciona novas imagens a um portfolio existente (multipart/form-data: `imagens`) |
+| DELETE | `/api/portfolios/{id}` | Remove um portfolio |
+
 ### 💬 Chat — `/api/chat` + WebSocket
 | Tipo | Endpoint | Descrição |
 |---|---|---|
@@ -186,6 +203,22 @@ Facilitei-Api/
 | WebSocket (STOMP) | `ws://.../buildrun-livechat-websocket` | Endpoint de conexão do chat em tempo real |
 | STOMP SEND | `/app/chat/{servicoId}` | Envia uma mensagem para o serviço |
 | STOMP SUBSCRIBE | `/topics/chat/{servicoId}` | Recebe mensagens em tempo real do serviço |
+
+---
+
+## 🗄️ Banco de Dados e Migrations
+
+O schema é versionado via **Flyway**. Os scripts ficam em `src/main/resources/db/migration/` e rodam automaticamente na subida da aplicação, na ordem:
+
+| Migration | Descrição |
+|---|---|
+| `V1__create_tables.sql` | Schema inicial (usuário, cliente, trabalhador, serviço, avaliações, solicitações, chat, etc.) |
+| `V2__add_preco_to_servico.sql` | Adiciona a coluna `preco` em `servico` |
+| `V3__create_portfolio.sql` | Cria as tabelas `portfolio` e `portfolio_imagens` |
+
+O `spring.jpa.hibernate.ddl-auto` está em `validate` — o Hibernate só confere se as entidades batem com o schema criado pelas migrations, mas não altera mais o banco por conta própria. Qualquer mudança de schema deve vir em uma nova migration (`V4__...sql`, e assim por diante).
+
+Se você já tinha um banco criado por uma versão anterior deste projeto (com `ddl-auto=update`), `spring.flyway.baseline-version=3` faz o Flyway tratá-lo como já estando no V3, sem tentar recriar as tabelas. Em um banco novo e vazio, as migrations rodam normalmente do zero.
 
 ---
 
@@ -227,7 +260,15 @@ MAIL_PASSWORD=sua-senha
 RESET_PASSWORD_URL=http://localhost:5173/reset-password
 ```
 
-#### 3. Executar com Maven
+A conexão com o banco também é configurável por variável de ambiente (útil ao rodar em Docker, onde `localhost` não aponta para o host da máquina):
+
+```Bash
+SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/faciliteidb?createDatabaseIfNotExist=true
+SPRING_DATASOURCE_USERNAME=root
+SPRING_DATASOURCE_PASSWORD=admin
+```
+
+#### 3. Executar com Maven (banco MySQL local ou via Docker)
 
 ```Bash
 ./mvnw spring-boot:run
@@ -235,12 +276,30 @@ RESET_PASSWORD_URL=http://localhost:5173/reset-password
 * API: http://localhost:8080
 * Swagger UI: http://localhost:8080/swagger-ui.html
 
-#### 4. Executar com Docker
+#### 4. Executar com Docker Compose (recomendado)
+
+Sobe a API **e** o MySQL juntos, já conectados entre si pela rede interna do Docker:
+
+```Bash
+docker compose up --build
+```
+* API: http://localhost:8080
+* MySQL: exposto também em `localhost:3306` (usuário `root`, senha `admin`)
+
+Para rodar só o banco (e executar a API localmente pelo Maven/IDE):
+```Bash
+docker compose up db
+```
+
+#### 5. Executar com Docker (manual, sem Compose)
 
 ```Bash
 docker build -t facilitei-api .
-docker run -p 8080:8080 facilitei-api
+docker run -p 8080:8080 \
+  -e SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/faciliteidb?createDatabaseIfNotExist=true \
+  facilitei-api
 ```
+> ⚠️ Dentro do container, `localhost` aponta para o próprio container — por isso é necessário apontar para `host.docker.internal` (ou para o nome do serviço do banco, se ambos estiverem na mesma rede Docker) em vez de `localhost`.
 
 ---
 
