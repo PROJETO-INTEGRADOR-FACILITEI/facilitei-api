@@ -5,6 +5,7 @@ import java.util.List;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,6 +17,7 @@ import psg.facilitei.Entity.Enum.TipoServico;
 public class TrabalhadorRequestDTO {
 
     @NotBlank(message = "Nome não pode ser vazio!")
+    @Size(max = 150, message = "O nome deve ter no máximo 150 caracteres.")
     private String nome;
 
     @NotBlank(message = "Email não pode ser vazio!")
@@ -28,6 +30,7 @@ public class TrabalhadorRequestDTO {
     private List<Long> avaliacoesIds = new ArrayList<>();
     private String disponibilidade;
     private Double notaTrabalhador;
+    @NotBlank(message = "A senha é obrigatória.")
     private String senha;
     private String sobre;
     private String avatarUrl;

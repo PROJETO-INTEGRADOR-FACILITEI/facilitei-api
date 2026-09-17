@@ -7,6 +7,8 @@ import psg.facilitei.DTO.AvaliacaoTrabalhadorRequestDTO;
 import psg.facilitei.DTO.AvaliacaoTrabalhadorResponseDTO;
 import psg.facilitei.Services.AvaliacaoTrabalhadorService;
 
+import jakarta.validation.Valid;
+
 import java.util.List;
 
 @RestController
@@ -17,7 +19,7 @@ public class AvaliacaoTrabalhadorController {
     private AvaliacaoTrabalhadorService avaliacaoTrabalhadorService;
 
     @PostMapping
-    public ResponseEntity<AvaliacaoTrabalhadorResponseDTO> criar(@RequestBody AvaliacaoTrabalhadorRequestDTO dto) {
+    public ResponseEntity<AvaliacaoTrabalhadorResponseDTO> criar(@Valid @RequestBody AvaliacaoTrabalhadorRequestDTO dto) {
         return ResponseEntity.ok(avaliacaoTrabalhadorService.criar(dto));
     }
 

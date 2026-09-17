@@ -14,6 +14,7 @@ import psg.facilitei.Entity.Enum.StatusSolicitacao;
 import psg.facilitei.Exceptions.ResourceNotFoundException;
 import psg.facilitei.Repository.SolicitacaoServicoRepository;
 import psg.facilitei.Repository.TrabalhadorRepository;
+import psg.facilitei.Util.HtmlSanitizer;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -48,7 +49,7 @@ public class SolicitacaoServicoService {
         solicitacao.setTrabalhador(trabalhador);
 
         // 3. Define dados da solicitação
-        solicitacao.setDescricao(dto.getDescricao());
+        solicitacao.setDescricao(HtmlSanitizer.sanitize(dto.getDescricao()));
         solicitacao.setTipoServico(dto.getTipoServico());
         solicitacao.setDataSolicitacao(LocalDateTime.now());
         

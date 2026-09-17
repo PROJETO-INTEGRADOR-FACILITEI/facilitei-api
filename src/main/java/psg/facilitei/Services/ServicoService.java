@@ -15,6 +15,7 @@ import psg.facilitei.Repository.AvaliacaoServicoRepository;
 import psg.facilitei.Repository.ClienteRepository;
 import psg.facilitei.Repository.ServicoRepository;
 import psg.facilitei.Repository.SolicitacaoServicoRepository;
+import psg.facilitei.Util.HtmlSanitizer;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -61,6 +62,8 @@ public class ServicoService {
     @Transactional
     public ServicoResponseDTO criar(ServicoRequestDTO dto) {
         Servico servico = modelMapper.map(dto, Servico.class);
+        servico.setTitulo(HtmlSanitizer.sanitize(servico.getTitulo()));
+        servico.setDescricao(HtmlSanitizer.sanitize(servico.getDescricao()));
 
         Trabalhador trabalhador = trabalhadorService.buscarEntidadePorId(dto.getTrabalhadorId());
         servico.setTrabalhador(trabalhador);
@@ -84,7 +87,8 @@ public class ServicoService {
                 .orElseThrow(() -> new ResourceNotFoundException("Serviço não encontrado para atualização."));
 
         modelMapper.map(dto, existente);
-        existente.setTitulo(dto.getTitulo());
+        existente.setTitulo(HtmlSanitizer.sanitize(dto.getTitulo()));
+        existente.setDescricao(HtmlSanitizer.sanitize(dto.getDescricao()));
 
         if (dto.getTrabalhadorId() != null && !existente.getTrabalhador().getId().equals(dto.getTrabalhadorId())) {
             Trabalhador novoTrabalhador = trabalhadorService.buscarEntidadePorId(dto.getTrabalhadorId());

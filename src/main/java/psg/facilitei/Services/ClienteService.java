@@ -17,6 +17,7 @@ import psg.facilitei.Repository.AvaliacaoServicoRepository;
 import psg.facilitei.Repository.AvaliacaoTrabalhadorRepository;
 import psg.facilitei.Repository.ClienteRepository;
 import psg.facilitei.Repository.ServicoRepository;
+import psg.facilitei.Util.HtmlSanitizer;
 
 import java.util.List;
 import java.util.logging.Logger;
@@ -55,7 +56,8 @@ public class ClienteService {
     public ClienteResponseDTO create(ClienteRequestDTO dto) {
         logger.info("Criando cliente");
         Cliente cliente = modelMapper.map(dto, Cliente.class);
-        
+        cliente.setNome(HtmlSanitizer.sanitize(cliente.getNome()));
+
         // CORREÇÃO AQUI: Mapeando manualmente o avatarUrl do DTO para urlFoto da Entidade
         if (dto.getAvatarUrl() != null) {
             cliente.setUrlFoto(dto.getAvatarUrl());
@@ -158,7 +160,7 @@ public class ClienteService {
         logger.info("Editando cliente com ID: " + id);
         Cliente clienteAntigo = buscarEntidadePorId(id);
 
-        if (dto.getNome() != null) clienteAntigo.setNome(dto.getNome());
+        if (dto.getNome() != null) clienteAntigo.setNome(HtmlSanitizer.sanitize(dto.getNome()));
         if (dto.getEmail() != null) clienteAntigo.setEmail(dto.getEmail());
         if (dto.getSenha() != null) clienteAntigo.setSenha(dto.getSenha());
         if(dto.getTelefone() != null) clienteAntigo.setTelefone(dto.getTelefone());

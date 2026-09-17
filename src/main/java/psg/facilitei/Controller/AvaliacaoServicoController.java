@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
+
 import java.util.List;
 
 @RestController
@@ -19,7 +21,7 @@ public class AvaliacaoServicoController {
     private AvaliacaoServicoService service;
 
     @PostMapping("/Criar")
-    public ResponseEntity<AvaliacaoServicoResponseDTO> criarAvaliacao(@RequestBody AvaliacaoServicoRequestDTO requestDTO) {
+    public ResponseEntity<AvaliacaoServicoResponseDTO> criarAvaliacao(@Valid @RequestBody AvaliacaoServicoRequestDTO requestDTO) {
         return ResponseEntity.status(201).body(service.create(requestDTO));
     }
 

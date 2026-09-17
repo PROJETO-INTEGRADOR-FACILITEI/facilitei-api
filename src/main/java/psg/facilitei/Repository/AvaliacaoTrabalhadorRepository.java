@@ -24,4 +24,6 @@ public interface AvaliacaoTrabalhadorRepository extends JpaRepository<AvaliacaoT
     List<AvaliacaoTrabalhador> findByTrabalhadorId(Long trabalhadorId);
 
     void deleteByClienteId(Long clienteId);
+
+    boolean existsByClienteIdAndTrabalhadorId(Long clienteId, Long trabalhadorId);
 }

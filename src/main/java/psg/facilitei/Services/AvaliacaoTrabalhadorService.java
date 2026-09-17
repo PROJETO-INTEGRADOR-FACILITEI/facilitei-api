@@ -9,10 +9,12 @@ import psg.facilitei.DTO.AvaliacaoTrabalhadorResponseDTO;
 import psg.facilitei.Entity.AvaliacaoTrabalhador;
 import psg.facilitei.Entity.Cliente;
 import psg.facilitei.Entity.Trabalhador;
+import psg.facilitei.Exceptions.BusinessRuleException;
 import psg.facilitei.Exceptions.ResourceNotFoundException;
 import psg.facilitei.Repository.AvaliacaoTrabalhadorRepository;
 import psg.facilitei.Repository.ClienteRepository;
 import psg.facilitei.Repository.TrabalhadorRepository;
+import psg.facilitei.Util.HtmlSanitizer;
 
 import java.util.Date;
 import java.util.List;
@@ -32,6 +34,10 @@ public class AvaliacaoTrabalhadorService {
 
     @Transactional
     public AvaliacaoTrabalhadorResponseDTO criar(AvaliacaoTrabalhadorRequestDTO dto) {
+        if (repository.existsByClienteIdAndTrabalhadorId(dto.getClienteId(), dto.getTrabalhadorId())) {
+            throw new BusinessRuleException("Este cliente já avaliou este trabalhador.");
+        }
+
         Trabalhador trabalhador = trabalhadorRepository.findById(dto.getTrabalhadorId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Trabalhador não encontrado. ID: " + dto.getTrabalhadorId()));
@@ -44,7 +50,7 @@ public class AvaliacaoTrabalhadorService {
         avaliacao.setTrabalhador(trabalhador);
         avaliacao.setCliente(cliente);
         avaliacao.setNota(dto.getNota());
-        avaliacao.setComentario(dto.getComentario());
+        avaliacao.setComentario(HtmlSanitizer.sanitize(dto.getComentario()));
         avaliacao.setFotos(dto.getFotos());
         avaliacao.setData(new Date());
 

@@ -11,6 +11,7 @@ import psg.facilitei.DTO.AvaliacaoTrabalhadorResponseDTO;
 import psg.facilitei.Entity.AvaliacaoTrabalhador;
 import psg.facilitei.Entity.Cliente;
 import psg.facilitei.Entity.Trabalhador;
+import psg.facilitei.Exceptions.BusinessRuleException;
 import psg.facilitei.Exceptions.ResourceNotFoundException;
 import psg.facilitei.Repository.AvaliacaoTrabalhadorRepository;
 import psg.facilitei.Repository.ClienteRepository;
@@ -22,6 +23,8 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -86,6 +89,22 @@ class AvaliacaoTrabalhadorServiceTest {
         when(trabalhadorRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> service.criar(dto));
+    }
+
+    @Test
+    void criar_quandoClienteJaAvaliouEsteTrabalhador_lancaBusinessRuleException() {
+        AvaliacaoTrabalhadorService service = newService();
+
+        AvaliacaoTrabalhadorRequestDTO dto = new AvaliacaoTrabalhadorRequestDTO();
+        dto.setTrabalhadorId(1L);
+        dto.setClienteId(2L);
+        dto.setNota(5);
+
+        when(repository.existsByClienteIdAndTrabalhadorId(2L, 1L)).thenReturn(true);
+
+        assertThrows(BusinessRuleException.class, () -> service.criar(dto));
+
+        verify(repository, never()).save(any(AvaliacaoTrabalhador.class));
     }
 
     @Test

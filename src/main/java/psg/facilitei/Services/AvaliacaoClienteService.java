@@ -8,6 +8,7 @@ import psg.facilitei.DTO.AvaliacaoClienteResponseDTO;
 import psg.facilitei.Entity.AvaliacaoCliente;
 import psg.facilitei.Entity.Cliente;
 import psg.facilitei.Entity.Trabalhador;
+import psg.facilitei.Exceptions.BusinessRuleException;
 import psg.facilitei.Exceptions.ResourceNotFoundException; // Importante!
 import psg.facilitei.Repository.AvaliacaoClienteRepository;
 import psg.facilitei.Repository.ClienteRepository;
@@ -30,6 +31,11 @@ public class AvaliacaoClienteService {
 
     @Transactional
     public AvaliacaoClienteResponseDTO criarAvaliacao(AvaliacaoClienteRequestDTO dto) {
+        if (dto.getServicoId() != null
+                && avaliacaoClienteRepository.existsByTrabalhadorIdAndServicoId(dto.getTrabalhadorId(), dto.getServicoId())) {
+            throw new BusinessRuleException("Este trabalhador já avaliou este cliente para este serviço.");
+        }
+
         // 1. Monta a entidade (busca IDs e valida)
         AvaliacaoCliente avaliacao = toEntity(dto);
 
@@ -97,7 +103,7 @@ public class AvaliacaoClienteService {
         avaliacao.setCliente(cliente);
         avaliacao.setServicoId(dto.getServicoId());
         avaliacao.setNota(dto.getNota());
-        avaliacao.setComentario(dto.getComentario());
+        avaliacao.setComentario(psg.facilitei.Util.HtmlSanitizer.sanitize(dto.getComentario()));
         // mediaCliente é setada no método criarAvaliacao
 
         return avaliacao;

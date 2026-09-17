@@ -11,6 +11,7 @@ import psg.facilitei.Entity.AvaliacaoServico;
 import psg.facilitei.Entity.Cliente;
 import psg.facilitei.Entity.Servico;
 import psg.facilitei.Entity.Trabalhador;
+import psg.facilitei.Exceptions.BusinessRuleException;
 import psg.facilitei.Repository.AvaliacaoServicoRepository;
 import psg.facilitei.Repository.ClienteRepository;
 import psg.facilitei.Repository.ServicoRepository;
@@ -20,7 +21,9 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -70,6 +73,21 @@ class AvaliacaoServicoServiceTest {
         assertEquals(9L, result.getId());
         assertEquals(4.5, trabalhador.getNotaTrabalhador());
         verify(trabalhadorRepository).save(trabalhador);
+    }
+
+    @Test
+    void create_quandoClienteJaAvaliouEsteServico_lancaBusinessRuleException() {
+        AvaliacaoServicoRequestDTO dto = new AvaliacaoServicoRequestDTO();
+        dto.setClienteId(1L);
+        dto.setServicoId(3L);
+        dto.setNota(5);
+        dto.setComentario("Segunda avaliação");
+
+        when(repository.existsByClienteIdAndServicoId(1L, 3L)).thenReturn(true);
+
+        assertThrows(BusinessRuleException.class, () -> avaliacaoServicoService.create(dto));
+
+        verify(repository, never()).save(any(AvaliacaoServico.class));
     }
 
     @Test

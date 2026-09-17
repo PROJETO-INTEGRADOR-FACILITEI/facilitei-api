@@ -15,6 +15,7 @@ import psg.facilitei.Repository.AvaliacaoClienteRepository;
 import psg.facilitei.Repository.AvaliacaoTrabalhadorRepository;
 import psg.facilitei.Repository.ServicoRepository;
 import psg.facilitei.Repository.TrabalhadorRepository;
+import psg.facilitei.Util.HtmlSanitizer;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -49,11 +50,11 @@ public class TrabalhadorService {
         Trabalhador trabalhador = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Trabalhador não encontrado com ID: " + id));
 
-        if (dto.getNome() != null) trabalhador.setNome(dto.getNome());
+        if (dto.getNome() != null) trabalhador.setNome(HtmlSanitizer.sanitize(dto.getNome()));
         if (dto.getEmail() != null) trabalhador.setEmail(dto.getEmail());
         if (dto.getSenha() != null) trabalhador.setSenha((dto.getSenha()));
         if (dto.getDisponibilidade() != null) trabalhador.setDisponibilidade(dto.getDisponibilidade());
-        if (dto.getSobre() != null) trabalhador.setSobre(dto.getSobre());
+        if (dto.getSobre() != null) trabalhador.setSobre(HtmlSanitizer.sanitize(dto.getSobre()));
         if (dto.getTelefone() != null) trabalhador.setTelefone(dto.getTelefone());
         if (dto.getAvatarUrl() != null) trabalhador.setUrlFoto(dto.getAvatarUrl());
 
@@ -94,12 +95,12 @@ public class TrabalhadorService {
     public Trabalhador toEntity(TrabalhadorRequestDTO dto) {
         Trabalhador trabalhador = new Trabalhador();
 
-        trabalhador.setNome(dto.getNome());
+        trabalhador.setNome(HtmlSanitizer.sanitize(dto.getNome()));
         trabalhador.setEmail(dto.getEmail());
         trabalhador.setNotaTrabalhador(dto.getNotaTrabalhador());
         trabalhador.setSenha(dto.getSenha());
         trabalhador.setDisponibilidade(dto.getDisponibilidade());
-        trabalhador.setSobre(dto.getSobre());
+        trabalhador.setSobre(HtmlSanitizer.sanitize(dto.getSobre()));
         trabalhador.setTelefone(dto.getTelefone());
         // CORREÇÃO AQUI: Mapeando a URL da foto vinda do frontend
         trabalhador.setUrlFoto(dto.getAvatarUrl()); 

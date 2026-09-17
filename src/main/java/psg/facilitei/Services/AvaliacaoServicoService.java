@@ -13,6 +13,8 @@ import psg.facilitei.Entity.AvaliacaoServico;
 import psg.facilitei.Entity.Cliente;
 import psg.facilitei.Entity.Servico;
 import psg.facilitei.Entity.Trabalhador;
+import psg.facilitei.Exceptions.BusinessRuleException;
+import psg.facilitei.Exceptions.ResourceNotFoundException;
 import psg.facilitei.Repository.AvaliacaoServicoRepository;
 import psg.facilitei.Repository.ClienteRepository;
 import psg.facilitei.Repository.ServicoRepository;
@@ -32,6 +34,10 @@ public class AvaliacaoServicoService {
 
     @Transactional
     public AvaliacaoServicoResponseDTO create(AvaliacaoServicoRequestDTO requestDTO) {
+        if (repository.existsByClienteIdAndServicoId(requestDTO.getClienteId(), requestDTO.getServicoId())) {
+            throw new BusinessRuleException("Este cliente já avaliou este serviço.");
+        }
+
         // 1. Cria e Salva a Avaliação
         AvaliacaoServico avaliacao = toEntity(requestDTO);
         AvaliacaoServico savedAvaliacao = repository.save(avaliacao);
@@ -63,15 +69,15 @@ public class AvaliacaoServicoService {
     private AvaliacaoServico toEntity(AvaliacaoServicoRequestDTO dto) {
         AvaliacaoServico avaliacao = new AvaliacaoServico();
         avaliacao.setNota(dto.getNota());
-        avaliacao.setComentario(dto.getComentario());
+        avaliacao.setComentario(psg.facilitei.Util.HtmlSanitizer.sanitize(dto.getComentario()));
         avaliacao.setData(new java.util.Date()); // Garante data atual
 
         Cliente cliente = clienteRepository.findById(dto.getClienteId())
-                .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado. ID: " + dto.getClienteId()));
         avaliacao.setCliente(cliente);
 
         Servico servico = servicoRepository.findById(dto.getServicoId())
-                .orElseThrow(() -> new RuntimeException("Serviço não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Serviço não encontrado. ID: " + dto.getServicoId()));
         avaliacao.setServico(servico);
 
         return avaliacao;

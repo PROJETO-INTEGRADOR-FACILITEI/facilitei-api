@@ -17,4 +17,6 @@ public interface AvaliacaoClienteRepository extends JpaRepository<AvaliacaoClien
 
     void deleteByClienteId(Long clienteId);
 
+    boolean existsByTrabalhadorIdAndServicoId(Long trabalhadorId, Long servicoId);
+
 }

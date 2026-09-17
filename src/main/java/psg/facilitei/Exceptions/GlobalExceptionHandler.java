@@ -2,12 +2,18 @@
 package psg.facilitei.Exceptions;
 
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -74,6 +80,89 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponseDTO> handleMessageNotReadable(HttpMessageNotReadableException ex) {
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                "Corpo da requisição ausente, malformado ou com valor inválido para um dos campos.",
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponseDTO> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                "Parâmetro '" + ex.getName() + "' possui um valor inválido: " + ex.getValue(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+
+    @ExceptionHandler(NumberFormatException.class)
+    public ResponseEntity<ErrorResponseDTO> handleNumberFormat(NumberFormatException ex) {
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                "Valor numérico inválido: " + ex.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ErrorResponseDTO> handleMissingPart(MissingServletRequestPartException ex) {
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                "Parte obrigatória da requisição ausente: " + ex.getRequestPartName(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponseDTO> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                HttpStatus.METHOD_NOT_ALLOWED.value(),
+                "Method Not Allowed",
+                ex.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(error);
+    }
+
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ErrorResponseDTO> handleMediaTypeNotSupported(HttpMediaTypeNotSupportedException ex) {
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                HttpStatus.UNSUPPORTED_MEDIA_TYPE.value(),
+                "Unsupported Media Type",
+                "Content-Type não suportado. Utilize application/json.",
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(error);
+    }
+
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponseDTO> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                HttpStatus.CONFLICT.value(),
+                "Conflict",
+                "A operação viola uma regra de integridade dos dados (ex.: valor duplicado, campo obrigatório ausente ou tamanho excedido).",
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
 
 
     @ExceptionHandler(Exception.class)
