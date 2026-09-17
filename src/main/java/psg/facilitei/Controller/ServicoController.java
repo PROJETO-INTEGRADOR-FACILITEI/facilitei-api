@@ -76,8 +76,6 @@ public class ServicoController {
 
     @GetMapping("/por-cliente/{clienteId}")
     public ResponseEntity<List<ServicoResponseDTO>> listarPorCliente(@PathVariable Long clienteId) {
-        // Você precisará criar este método no ServicoService também, chamando o
-        // repository que editamos acima
         List<ServicoResponseDTO> servicos = servicoService.listarPorCliente(clienteId);
         return ResponseEntity.ok(servicos);
     }
@@ -90,8 +88,6 @@ public class ServicoController {
         List<ServicoResponseDTO> lista;
 
         if (trabalhadorId != null) {
-            // Você precisará criar findByTrabalhadorId no Repository e Service
-            // Aqui estou simulando o retorno filtrado
             lista = servicoService.listarPorTrabalhador(trabalhadorId);
         } else if (clienteId != null) {
             lista = servicoService.listarPorCliente(clienteId);

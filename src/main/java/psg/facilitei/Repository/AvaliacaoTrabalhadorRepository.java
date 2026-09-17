@@ -20,4 +20,6 @@ public interface AvaliacaoTrabalhadorRepository extends JpaRepository<AvaliacaoT
     @Transactional
     @Query("DELETE FROM AvaliacaoTrabalhador a WHERE a.trabalhador.id = :id")
     void deleteByTrabalhadorId(@Param("id") Long id);
+
+    List<AvaliacaoTrabalhador> findByTrabalhadorId(Long trabalhadorId);
 }

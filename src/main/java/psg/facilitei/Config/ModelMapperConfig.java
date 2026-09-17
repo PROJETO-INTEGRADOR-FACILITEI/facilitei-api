@@ -6,11 +6,13 @@ import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import psg.facilitei.DTO.AvaliacaoTrabalhadorResponseDTO;
 import psg.facilitei.DTO.ClienteResponseDTO;
 import psg.facilitei.DTO.ServicoRequestDTO;
 import psg.facilitei.DTO.ServicoResponseDTO;
 import psg.facilitei.DTO.SolicitacaoServicoResponseDTO;
 import psg.facilitei.DTO.TrabalhadorResponseDTO; // <--- Importe isto
+import psg.facilitei.Entity.AvaliacaoTrabalhador;
 import psg.facilitei.Entity.Cliente;
 import psg.facilitei.Entity.Servico;
 import psg.facilitei.Entity.SolicitacaoServico;
@@ -83,6 +85,24 @@ public class ModelMapperConfig {
                 // Mapeamento para Trabalhador (ADICIONADO AGORA)
                 modelMapper.createTypeMap(Trabalhador.class, TrabalhadorResponseDTO.class)
                                 .addMapping(Trabalhador::getUrlFoto, TrabalhadorResponseDTO::setAvatarUrl);
+
+                Converter<AvaliacaoTrabalhador, Long> avaliacaoTrabalhadorToTrabalhadorIdConverter = context -> context
+                                .getSource() == null || context.getSource().getTrabalhador() == null
+                                                ? null
+                                                : context.getSource().getTrabalhador().getId();
+
+                Converter<AvaliacaoTrabalhador, Long> avaliacaoTrabalhadorToClienteIdConverter = context -> context
+                                .getSource() == null || context.getSource().getCliente() == null
+                                                ? null
+                                                : context.getSource().getCliente().getId();
+
+                modelMapper.createTypeMap(AvaliacaoTrabalhador.class, AvaliacaoTrabalhadorResponseDTO.class)
+                                .addMappings(mapper -> {
+                                        mapper.using(avaliacaoTrabalhadorToTrabalhadorIdConverter).map(source -> source,
+                                                        AvaliacaoTrabalhadorResponseDTO::setTrabalhadorId);
+                                        mapper.using(avaliacaoTrabalhadorToClienteIdConverter).map(source -> source,
+                                                        AvaliacaoTrabalhadorResponseDTO::setClienteId);
+                                });
 
                 return modelMapper;
         }
