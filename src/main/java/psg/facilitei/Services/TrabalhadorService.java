@@ -2,16 +2,25 @@ package psg.facilitei.Services;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import psg.facilitei.DTO.EnderecoResponseDTO;
 import psg.facilitei.DTO.ServicoResponseDTO;
 import psg.facilitei.DTO.TrabalhadorRequestDTO;
+import psg.facilitei.DTO.TrabalhadorPageResponseDTO;
 import psg.facilitei.DTO.TrabalhadorResponseDTO;
 import psg.facilitei.DTO.TrabalhadorUpdateDTO;
 import psg.facilitei.Entity.AvaliacaoTrabalhador;
 import psg.facilitei.Entity.Endereco;
 import psg.facilitei.Entity.Servico;
 import psg.facilitei.Entity.Trabalhador;
+import psg.facilitei.Entity.Enum.TipoServico;
 import psg.facilitei.Repository.AvaliacaoClienteRepository;
 import psg.facilitei.Repository.AvaliacaoTrabalhadorRepository;
 import psg.facilitei.Repository.ServicoRepository;
@@ -19,6 +28,8 @@ import psg.facilitei.Repository.TrabalhadorRepository;
 import psg.facilitei.Util.HtmlSanitizer;
 
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,12 +50,51 @@ public class TrabalhadorService {
         return toResponseDTO(trabalhador);
     }
 
+    @Transactional(readOnly = true)
     public List<TrabalhadorResponseDTO> findAll() {
         List<Trabalhador> trabalhadores = repository.findAll();
 
         return trabalhadores.stream()
                 .map(this::toResponseDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public TrabalhadorPageResponseDTO findAllPaginado(int page, int size, String nome,
+            String localizacao, List<TipoServico> tiposServico, Double notaMinima) {
+        Specification<Trabalhador> filtros = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (nome != null && !nome.isBlank()) {
+                predicates.add(cb.like(cb.lower(root.get("nome")),
+                        "%" + nome.trim().toLowerCase(Locale.ROOT) + "%"));
+            }
+
+            if (localizacao != null && !localizacao.isBlank()) {
+                String termo = "%" + localizacao.trim().toLowerCase(Locale.ROOT) + "%";
+                var endereco = root.join("endereco", JoinType.LEFT);
+                predicates.add(cb.or(
+                        cb.like(cb.lower(endereco.get("cidade")), termo),
+                        cb.like(cb.lower(endereco.get("bairro")), termo),
+                        cb.like(cb.lower(endereco.get("estado")), termo)));
+            }
+
+            if (tiposServico != null && !tiposServico.isEmpty()) {
+                query.distinct(true);
+                predicates.add(root.join("habilidades", JoinType.INNER).in(tiposServico));
+            }
+
+            if (notaMinima != null && notaMinima > 0) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("notaTrabalhador"), notaMinima));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Page<TrabalhadorResponseDTO> resultado = repository.findAll(
+                filtros, PageRequest.of(page, size, Sort.by("id").ascending()))
+                .map(this::toResponseDTO);
+        return TrabalhadorPageResponseDTO.from(resultado);
     }
 
     public TrabalhadorResponseDTO atualizar(Long id, TrabalhadorUpdateDTO dto) {

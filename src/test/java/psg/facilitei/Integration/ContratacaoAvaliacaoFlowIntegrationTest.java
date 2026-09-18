@@ -79,6 +79,16 @@ class ContratacaoAvaliacaoFlowIntegrationTest {
 
         mockMvc.perform(get("/api/avaliacoes-servico/" + servicoId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].comentario", is("Serviço excelente, super recomendo")));
+                .andExpect(jsonPath("$[0].comentario", is("Serviço excelente, super recomendo")))
+                .andExpect(jsonPath("$[0].tipoServico", is("ELETRICISTA")));
+
+        mockMvc.perform(get("/api/avaliacoes-servico/trabalhador/" + trabalhador.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].tipoServico", is("ELETRICISTA")))
+                .andExpect(jsonPath("$[0].clienteNome", is("Cliente Teste")));
+
+        mockMvc.perform(get("/api/trabalhadores/buscarPorId/" + trabalhador.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.notaTrabalhador", is(5.0)));
     }
 }

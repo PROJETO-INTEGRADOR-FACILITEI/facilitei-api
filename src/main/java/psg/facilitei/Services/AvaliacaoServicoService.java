@@ -55,12 +55,14 @@ public class AvaliacaoServicoService {
         return toResponseDTO(savedAvaliacao);
     }
 
+    @Transactional(readOnly = true)
     public List<AvaliacaoServicoResponseDTO> buscarAvaliacoesPorServico(Long servicoId) {
         return repository.findByServicoId(servicoId).stream()
                 .map(this::toResponseDTO).collect(Collectors.toList());
     }
 
     // Método NOVO para listar avaliações no perfil do trabalhador
+    @Transactional(readOnly = true)
     public List<AvaliacaoServicoResponseDTO> buscarAvaliacoesPorTrabalhador(Long trabalhadorId) {
         return repository.findByTrabalhadorId(trabalhadorId).stream()
                 .map(this::toResponseDTO).collect(Collectors.toList());
@@ -89,8 +91,11 @@ public class AvaliacaoServicoService {
         dto.setNota(avaliacao.getNota());
         dto.setComentario(avaliacao.getComentario());
         dto.setClienteId(avaliacao.getCliente().getId());
+        dto.setClienteNome(avaliacao.getCliente().getNome());
         dto.setServicoId(avaliacao.getServico().getId());
+        dto.setTipoServico(avaliacao.getServico().getTipoServico());
         dto.setData(avaliacao.getData());
+        dto.setFotos(avaliacao.getFotos());
         return dto;
     }
     
