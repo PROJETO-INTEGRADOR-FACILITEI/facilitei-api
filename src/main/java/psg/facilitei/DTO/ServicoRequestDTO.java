@@ -39,6 +39,9 @@ public class ServicoRequestDTO {
     @Schema(description = "ID do cliente solicitante do serviço", example = "2")
     private Long clienteId;
 
+    @Schema(description = "ID da solicitação que originou o serviço", example = "3")
+    private Long solicitacaoId;
+
     @Schema(description = "Status do serviço", example = "EM_ANDAMENTO")
     private StatusServico statusServico;
 

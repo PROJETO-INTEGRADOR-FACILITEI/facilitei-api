@@ -12,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import psg.facilitei.DTO.ServicoRequestDTO;
 import psg.facilitei.DTO.ServicoResponseDTO;
 import psg.facilitei.Entity.Cliente;
+import psg.facilitei.Entity.Enum.StatusSolicitacao;
 import psg.facilitei.Entity.Enum.StatusServico;
 import psg.facilitei.Entity.Enum.TipoServico;
 import psg.facilitei.Entity.Servico;
@@ -64,6 +65,7 @@ class ServicoServiceTest {
                     mapper.skip(Servico::setId);
                     mapper.skip(Servico::setTrabalhador);
                     mapper.skip(Servico::setCliente);
+                    mapper.skip(Servico::setSolicitacao);
                 });
     }
 
@@ -116,6 +118,46 @@ class ServicoServiceTest {
         ServicoResponseDTO result = servicoService.criar(dto);
 
         assertEquals(StatusServico.PENDENTE, result.getStatusServico());
+    }
+
+    @Test
+    void criar_comSolicitacaoPendente_vinculaServicoEMarcaComoAceita() {
+        ServicoRequestDTO dto = new ServicoRequestDTO();
+        dto.setTitulo("Pintura de sala");
+        dto.setDescricao("Pintura completa");
+        dto.setTipoServico(TipoServico.PINTOR);
+        dto.setTrabalhadorId(1L);
+        dto.setClienteId(2L);
+        dto.setSolicitacaoId(7L);
+        dto.setStatusServico(StatusServico.EM_ANDAMENTO);
+
+        Trabalhador trabalhador = new Trabalhador();
+        trabalhador.setId(1L);
+        Cliente cliente = new Cliente();
+        cliente.setId(2L);
+        SolicitacaoServico solicitacao = new SolicitacaoServico();
+        solicitacao.setId(7L);
+        solicitacao.setTrabalhador(trabalhador);
+        solicitacao.setCliente(cliente);
+        solicitacao.setTipoServico(TipoServico.PINTOR);
+        solicitacao.setStatusSolicitacao(StatusSolicitacao.PENDENTE);
+
+        when(trabalhadorService.buscarEntidadePorId(1L)).thenReturn(trabalhador);
+        when(clienteRepository.findById(2L)).thenReturn(Optional.of(cliente));
+        when(solicitacaoServicoRepository.findById(7L)).thenReturn(Optional.of(solicitacao));
+        when(servicoRepository.save(any(Servico.class))).thenAnswer(invocation -> {
+            Servico s = invocation.getArgument(0);
+            s.setId(5L);
+            return s;
+        });
+
+        ServicoResponseDTO result = servicoService.criar(dto);
+
+        assertEquals(StatusServico.EM_ANDAMENTO, result.getStatusServico());
+        assertEquals(StatusSolicitacao.ACEITA, solicitacao.getStatusSolicitacao());
+        assertEquals(5L, solicitacao.getServico().getId());
+        assertEquals(7L, solicitacao.getServico().getSolicitacao().getId());
+        verify(solicitacaoServicoRepository).save(solicitacao);
     }
 
     @Test

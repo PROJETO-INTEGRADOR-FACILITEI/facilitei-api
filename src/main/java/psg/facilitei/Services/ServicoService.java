@@ -8,8 +8,11 @@ import psg.facilitei.DTO.ServicoRequestDTO;
 import psg.facilitei.DTO.ServicoResponseDTO;
 import psg.facilitei.Entity.Cliente;
 import psg.facilitei.Entity.Servico;
+import psg.facilitei.Entity.SolicitacaoServico;
 import psg.facilitei.Entity.Trabalhador;
+import psg.facilitei.Entity.Enum.StatusSolicitacao;
 import psg.facilitei.Entity.Enum.StatusServico;
+import psg.facilitei.Exceptions.BusinessRuleException;
 import psg.facilitei.Exceptions.ResourceNotFoundException;
 import psg.facilitei.Repository.AvaliacaoServicoRepository;
 import psg.facilitei.Repository.ClienteRepository;
@@ -73,12 +76,40 @@ public class ServicoService {
                         () -> new ResourceNotFoundException("Cliente não encontrado com ID: " + dto.getClienteId()));
         servico.setCliente(cliente);
 
+        SolicitacaoServico solicitacao = null;
+        if (dto.getSolicitacaoId() != null) {
+            solicitacao = solicitacaoServicoRepository.findById(dto.getSolicitacaoId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Solicitação não encontrada com ID: " + dto.getSolicitacaoId()));
+
+            validarSolicitacaoPendente(solicitacao, dto);
+            servico.setSolicitacao(solicitacao);
+        }
+
         if (servico.getStatusServico() == null) {
             servico.setStatusServico(StatusServico.PENDENTE);
         }
 
         Servico salvo = servicoRepository.save(servico);
+
+        if (solicitacao != null) {
+            solicitacao.setServico(salvo);
+            solicitacao.setStatusSolicitacao(StatusSolicitacao.ACEITA);
+            solicitacaoServicoRepository.save(solicitacao);
+        }
+
         return modelMapper.map(salvo, ServicoResponseDTO.class);
+    }
+
+    private void validarSolicitacaoPendente(SolicitacaoServico solicitacao, ServicoRequestDTO dto) {
+        if (solicitacao.getStatusSolicitacao() != StatusSolicitacao.PENDENTE) {
+            throw new BusinessRuleException("A solicitação já foi processada.");
+        }
+        if (!solicitacao.getTrabalhador().getId().equals(dto.getTrabalhadorId())
+                || !solicitacao.getCliente().getId().equals(dto.getClienteId())
+                || solicitacao.getTipoServico() != dto.getTipoServico()) {
+            throw new BusinessRuleException("Os dados do serviço não correspondem à solicitação informada.");
+        }
     }
 
     @Transactional

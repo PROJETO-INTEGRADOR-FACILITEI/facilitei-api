@@ -56,6 +56,7 @@ public class ModelMapperConfig {
                                         mapper.skip(Servico::setId);
                                         mapper.skip(Servico::setTrabalhador);
                                         mapper.skip(Servico::setCliente);
+                                        mapper.skip(Servico::setSolicitacao);
                                 });
 
                 modelMapper.createTypeMap(Servico.class, ServicoResponseDTO.class)
