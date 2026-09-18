@@ -16,12 +16,14 @@ import psg.facilitei.DTO.TrabalhadorRequestDTO;
 import psg.facilitei.DTO.TrabalhadorPageResponseDTO;
 import psg.facilitei.DTO.TrabalhadorResponseDTO;
 import psg.facilitei.DTO.TrabalhadorUpdateDTO;
+import psg.facilitei.DTO.ResumoAvaliacaoTipoServicoDTO;
 import psg.facilitei.Entity.AvaliacaoTrabalhador;
 import psg.facilitei.Entity.Endereco;
 import psg.facilitei.Entity.Servico;
 import psg.facilitei.Entity.Trabalhador;
 import psg.facilitei.Entity.Enum.TipoServico;
 import psg.facilitei.Repository.AvaliacaoClienteRepository;
+import psg.facilitei.Repository.AvaliacaoServicoRepository;
 import psg.facilitei.Repository.AvaliacaoTrabalhadorRepository;
 import psg.facilitei.Repository.ServicoRepository;
 import psg.facilitei.Repository.TrabalhadorRepository;
@@ -30,6 +32,8 @@ import psg.facilitei.Util.HtmlSanitizer;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,6 +47,8 @@ public class TrabalhadorService {
     private AvaliacaoTrabalhadorRepository avaliacaoTrabalhadorRepository;
     @Autowired
     private AvaliacaoClienteRepository avaliacaoClienteRepository;
+    @Autowired
+    private AvaliacaoServicoRepository avaliacaoServicoRepository;
 
 
     public TrabalhadorResponseDTO createTrabalhador(TrabalhadorRequestDTO trabalhadorRequestDTO) {
@@ -54,8 +60,9 @@ public class TrabalhadorService {
     public List<TrabalhadorResponseDTO> findAll() {
         List<Trabalhador> trabalhadores = repository.findAll();
 
+        Map<Long, List<ResumoAvaliacaoTipoServicoDTO>> resumos = buscarResumos(trabalhadores);
         return trabalhadores.stream()
-                .map(this::toResponseDTO)
+                .map(trabalhador -> toResponseDTO(trabalhador, resumos.getOrDefault(trabalhador.getId(), List.of())))
                 .collect(Collectors.toList());
     }
 
@@ -91,9 +98,11 @@ public class TrabalhadorService {
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
-        Page<TrabalhadorResponseDTO> resultado = repository.findAll(
-                filtros, PageRequest.of(page, size, Sort.by("id").ascending()))
-                .map(this::toResponseDTO);
+        Page<Trabalhador> trabalhadores = repository.findAll(
+                filtros, PageRequest.of(page, size, Sort.by("id").ascending()));
+        Map<Long, List<ResumoAvaliacaoTipoServicoDTO>> resumos = buscarResumos(trabalhadores.getContent());
+        Page<TrabalhadorResponseDTO> resultado = trabalhadores.map(trabalhador ->
+                toResponseDTO(trabalhador, resumos.getOrDefault(trabalhador.getId(), List.of())));
         return TrabalhadorPageResponseDTO.from(resultado);
     }
 
@@ -186,7 +195,26 @@ public class TrabalhadorService {
         return trabalhador;
     }
 
-public TrabalhadorResponseDTO toResponseDTO(Trabalhador entity) {
+    private Map<Long, List<ResumoAvaliacaoTipoServicoDTO>> buscarResumos(List<Trabalhador> trabalhadores) {
+        Map<Long, List<ResumoAvaliacaoTipoServicoDTO>> resumos = new HashMap<>();
+        if (trabalhadores.isEmpty()) return resumos;
+
+        List<Long> ids = trabalhadores.stream().map(Trabalhador::getId).toList();
+        for (Object[] linha : avaliacaoServicoRepository.resumirPorTrabalhadores(ids)) {
+            Long trabalhadorId = (Long) linha[0];
+            resumos.computeIfAbsent(trabalhadorId, ignored -> new ArrayList<>()).add(
+                    new ResumoAvaliacaoTipoServicoDTO((TipoServico) linha[1],
+                            ((Number) linha[2]).doubleValue(), ((Number) linha[3]).longValue()));
+        }
+        return resumos;
+    }
+
+    public TrabalhadorResponseDTO toResponseDTO(Trabalhador entity) {
+        return toResponseDTO(entity, buscarResumos(List.of(entity)).getOrDefault(entity.getId(), List.of()));
+    }
+
+    private TrabalhadorResponseDTO toResponseDTO(Trabalhador entity,
+            List<ResumoAvaliacaoTipoServicoDTO> resumos) {
         TrabalhadorResponseDTO dto = new TrabalhadorResponseDTO();
 
         dto.setId(String.valueOf(entity.getId()));
@@ -195,6 +223,7 @@ public TrabalhadorResponseDTO toResponseDTO(Trabalhador entity) {
         dto.setTelefone(entity.getTelefone());
         dto.setDisponibilidade(entity.getDisponibilidade());
         dto.setNotaTrabalhador(entity.getNotaTrabalhador());
+        dto.setAvaliacoesPorServico(resumos);
         dto.setSobre(entity.getSobre());
         dto.setServicoPrincipal(entity.getServicoPrincipal());
         dto.setAvatarUrl(entity.getUrlFoto());

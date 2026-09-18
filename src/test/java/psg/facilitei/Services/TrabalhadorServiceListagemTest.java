@@ -10,8 +10,15 @@ import org.springframework.test.context.ActiveProfiles;
 
 import psg.facilitei.DTO.TrabalhadorPageResponseDTO;
 import psg.facilitei.Entity.Endereco;
+import psg.facilitei.Entity.Cliente;
+import psg.facilitei.Entity.Servico;
+import psg.facilitei.Entity.AvaliacaoServico;
 import psg.facilitei.Entity.Trabalhador;
+import psg.facilitei.Entity.Enum.StatusServico;
 import psg.facilitei.Entity.Enum.TipoServico;
+import psg.facilitei.Repository.ClienteRepository;
+import psg.facilitei.Repository.ServicoRepository;
+import psg.facilitei.Repository.AvaliacaoServicoRepository;
 import psg.facilitei.Repository.TrabalhadorRepository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,6 +34,58 @@ class TrabalhadorServiceListagemTest {
 
     @Autowired
     private TrabalhadorService service;
+
+    @Autowired
+    private ClienteRepository clienteRepository;
+
+    @Autowired
+    private ServicoRepository servicoRepository;
+
+    @Autowired
+    private AvaliacaoServicoRepository avaliacaoServicoRepository;
+
+    @Test
+    void listarPaginado_incluiMediaEQuantidadePorEspecialidade() {
+        Trabalhador ana = repository.save(trabalhador("Ana", "ana@example.com", "Recife", 4.0,
+                List.of(TipoServico.DIARISTA, TipoServico.FAXINEIRA)));
+        Cliente cliente = new Cliente();
+        cliente.setNome("Cliente");
+        cliente.setEmail("cliente@example.com");
+        cliente.setSenha("senha");
+        cliente = clienteRepository.save(cliente);
+
+        avaliar(ana, cliente, TipoServico.DIARISTA, 5);
+        avaliar(ana, cliente, TipoServico.DIARISTA, 3);
+        avaliar(ana, cliente, TipoServico.FAXINEIRA, 2);
+
+        var resultado = service.findAllPaginado(0, 12, null, null, List.of(), 0.0);
+        var resumos = resultado.content().get(0).getAvaliacoesPorServico();
+
+        assertEquals(2, resumos.size());
+        assertEquals(4.0, resumos.stream().filter(r -> r.tipoServico() == TipoServico.DIARISTA)
+                .findFirst().orElseThrow().media());
+        assertEquals(2L, resumos.stream().filter(r -> r.tipoServico() == TipoServico.DIARISTA)
+                .findFirst().orElseThrow().quantidadeAvaliacoes());
+        assertEquals(2.0, resumos.stream().filter(r -> r.tipoServico() == TipoServico.FAXINEIRA)
+                .findFirst().orElseThrow().media());
+    }
+
+    private void avaliar(Trabalhador trabalhador, Cliente cliente, TipoServico tipo, int nota) {
+        Servico servico = new Servico();
+        servico.setTitulo("Serviço");
+        servico.setDescricao("Descrição do serviço");
+        servico.setTrabalhador(trabalhador);
+        servico.setCliente(cliente);
+        servico.setTipoServico(tipo);
+        servico.setStatusServico(StatusServico.FINALIZADO);
+        servicoRepository.save(servico);
+
+        AvaliacaoServico avaliacao = new AvaliacaoServico();
+        avaliacao.setCliente(cliente);
+        avaliacao.setServico(servico);
+        avaliacao.setNota(nota);
+        avaliacaoServicoRepository.save(avaliacao);
+    }
 
     @Test
     void listarPaginado_aplicaFiltrosSemDuplicarTrabalhadores() {

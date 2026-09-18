@@ -26,4 +26,9 @@ public interface AvaliacaoServicoRepository extends JpaRepository<AvaliacaoServi
 
     @Query("SELECT AVG(a.nota) FROM AvaliacaoServico a WHERE a.servico.trabalhador.id = :trabalhadorId")
     Double calcularMediaPorTrabalhador(@Param("trabalhadorId") Long trabalhadorId);
+
+    @Query("SELECT a.servico.trabalhador.id, a.servico.tipoServico, AVG(a.nota), COUNT(a) "
+            + "FROM AvaliacaoServico a WHERE a.servico.trabalhador.id IN :trabalhadorIds "
+            + "GROUP BY a.servico.trabalhador.id, a.servico.tipoServico")
+    List<Object[]> resumirPorTrabalhadores(@Param("trabalhadorIds") List<Long> trabalhadorIds);
 }

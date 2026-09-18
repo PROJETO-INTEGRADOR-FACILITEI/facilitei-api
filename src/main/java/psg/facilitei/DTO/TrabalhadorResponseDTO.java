@@ -19,6 +19,7 @@ public class TrabalhadorResponseDTO {
     private List<TipoServico> servicos; 
     private TipoServico servicoPrincipal;
     private Double notaTrabalhador;
+    private List<ResumoAvaliacaoTipoServicoDTO> avaliacoesPorServico;
     private String sobre;
     private String avatarUrl; 
 }
