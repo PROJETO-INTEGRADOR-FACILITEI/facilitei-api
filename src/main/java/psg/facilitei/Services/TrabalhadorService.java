@@ -2,6 +2,7 @@ package psg.facilitei.Services;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -10,6 +11,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
 import psg.facilitei.DTO.EnderecoResponseDTO;
 import psg.facilitei.DTO.ServicoResponseDTO;
 import psg.facilitei.DTO.TrabalhadorRequestDTO;
@@ -21,9 +26,12 @@ import psg.facilitei.Entity.AvaliacaoTrabalhador;
 import psg.facilitei.Entity.Endereco;
 import psg.facilitei.Entity.Servico;
 import psg.facilitei.Entity.Trabalhador;
+import psg.facilitei.Entity.AssinaturaPrestador;
 import psg.facilitei.Entity.Enum.TipoServico;
 import psg.facilitei.Repository.AvaliacaoClienteRepository;
 import psg.facilitei.Repository.AvaliacaoServicoRepository;
+import psg.facilitei.Repository.AssinaturaPrestadorRepository;
+import psg.facilitei.Exceptions.BusinessRuleException;
 import psg.facilitei.Repository.AvaliacaoTrabalhadorRepository;
 import psg.facilitei.Repository.ServicoRepository;
 import psg.facilitei.Repository.TrabalhadorRepository;
@@ -41,6 +49,8 @@ public class TrabalhadorService {
 
     @Autowired
     private TrabalhadorRepository repository;
+    @Value("${abacatepay.product-id:}")
+    private String monthlyProductId;
     @Autowired
     private ServicoRepository servicoRepository;
     @Autowired
@@ -49,6 +59,8 @@ public class TrabalhadorService {
     private AvaliacaoClienteRepository avaliacaoClienteRepository;
     @Autowired
     private AvaliacaoServicoRepository avaliacaoServicoRepository;
+    @Autowired
+    private AssinaturaPrestadorRepository assinaturaPrestadorRepository;
 
 
     public TrabalhadorResponseDTO createTrabalhador(TrabalhadorRequestDTO trabalhadorRequestDTO) {
@@ -58,7 +70,8 @@ public class TrabalhadorService {
 
     @Transactional(readOnly = true)
     public List<TrabalhadorResponseDTO> findAll() {
-        List<Trabalhador> trabalhadores = repository.findAll();
+        List<Trabalhador> trabalhadores = repository.findAll(
+                (root, query, cb) -> filtroAssinatura(root, query, cb));
 
         Map<Long, List<ResumoAvaliacaoTipoServicoDTO>> resumos = buscarResumos(trabalhadores);
         return trabalhadores.stream()
@@ -71,6 +84,8 @@ public class TrabalhadorService {
             String localizacao, List<TipoServico> tiposServico, Double notaMinima) {
         Specification<Trabalhador> filtros = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+
+            predicates.add(filtroAssinatura(root, query, cb));
 
             if (nome != null && !nome.isBlank()) {
                 predicates.add(cb.like(cb.lower(root.get("nome")),
@@ -106,6 +121,18 @@ public class TrabalhadorService {
         return TrabalhadorPageResponseDTO.from(resultado);
     }
 
+    private Predicate filtroAssinatura(Root<Trabalhador> root, CriteriaQuery<?> query,
+                                      CriteriaBuilder cb) {
+        if (monthlyProductId == null || monthlyProductId.isBlank()) return cb.conjunction();
+        Subquery<Long> assinaturasAtivas = query.subquery(Long.class);
+        Root<AssinaturaPrestador> assinatura = assinaturasAtivas.from(AssinaturaPrestador.class);
+        assinaturasAtivas.select(assinatura.get("id")).where(
+                cb.equal(assinatura.get("trabalhador").get("id"), root.get("id")),
+                cb.equal(assinatura.get("status"), "ACTIVE"),
+                cb.greaterThan(assinatura.get("activeUntil"), java.time.Instant.now()));
+        return cb.exists(assinaturasAtivas);
+    }
+
     public TrabalhadorResponseDTO atualizar(Long id, TrabalhadorUpdateDTO dto) {
         Trabalhador trabalhador = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Trabalhador não encontrado com ID: " + id));
@@ -132,9 +159,17 @@ public class TrabalhadorService {
         return toResponseDTO(repository.save(trabalhador));
     }
 
+    @Transactional
     public void delete(Long id) {
         Trabalhador trabalhador = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Trabalhador não encontrado com ID: " + id));
+
+        assinaturaPrestadorRepository.findByTrabalhadorId(id).ifPresent(assinatura -> {
+            if (!"CANCELLED".equals(assinatura.getStatus())) {
+                throw new BusinessRuleException("Cancele ou conclua a assinatura antes de excluir o profissional.");
+            }
+            assinaturaPrestadorRepository.delete(assinatura);
+        });
 
 
         avaliacaoClienteRepository.deleteByTrabalhadorId(id);

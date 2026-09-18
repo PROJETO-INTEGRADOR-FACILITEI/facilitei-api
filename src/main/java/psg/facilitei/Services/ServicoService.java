@@ -3,6 +3,7 @@ package psg.facilitei.Services;
 import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import psg.facilitei.DTO.ServicoRequestDTO;
 import psg.facilitei.DTO.ServicoResponseDTO;
@@ -18,6 +19,7 @@ import psg.facilitei.Repository.AvaliacaoServicoRepository;
 import psg.facilitei.Repository.ClienteRepository;
 import psg.facilitei.Repository.ServicoRepository;
 import psg.facilitei.Repository.SolicitacaoServicoRepository;
+import psg.facilitei.Repository.AssinaturaPrestadorRepository;
 import psg.facilitei.Util.HtmlSanitizer;
 
 import java.util.List;
@@ -44,6 +46,12 @@ public class ServicoService {
     @Autowired
     private SolicitacaoServicoRepository solicitacaoServicoRepository;
 
+    @Autowired
+    private AssinaturaPrestadorRepository assinaturaPrestadorRepository;
+
+    @Value("${abacatepay.product-id:}")
+    private String monthlyProductId;
+
     public List<ServicoResponseDTO> listarTodos() {
         return servicoRepository.findAll()
                 .stream()
@@ -69,6 +77,11 @@ public class ServicoService {
         servico.setDescricao(HtmlSanitizer.sanitize(servico.getDescricao()));
 
         Trabalhador trabalhador = trabalhadorService.buscarEntidadePorId(dto.getTrabalhadorId());
+        if (monthlyProductId != null && !monthlyProductId.isBlank()
+                && !assinaturaPrestadorRepository.existsByTrabalhadorIdAndStatusAndActiveUntilAfter(
+                        trabalhador.getId(), "ACTIVE", java.time.Instant.now())) {
+            throw new BusinessRuleException("Assinatura mensal do profissional inativa.");
+        }
         servico.setTrabalhador(trabalhador);
 
         Cliente cliente = clienteRepository.findById(dto.getClienteId())

@@ -2,6 +2,7 @@ package psg.facilitei.Services;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +15,8 @@ import psg.facilitei.Entity.Enum.StatusSolicitacao;
 import psg.facilitei.Exceptions.ResourceNotFoundException;
 import psg.facilitei.Repository.SolicitacaoServicoRepository;
 import psg.facilitei.Repository.TrabalhadorRepository;
+import psg.facilitei.Repository.AssinaturaPrestadorRepository;
+import psg.facilitei.Exceptions.BusinessRuleException;
 import psg.facilitei.Util.HtmlSanitizer;
 
 import java.time.LocalDateTime;
@@ -33,6 +36,12 @@ public class SolicitacaoServicoService {
     private TrabalhadorRepository trabalhadorRepository;
 
     @Autowired
+    private AssinaturaPrestadorRepository assinaturaPrestadorRepository;
+
+    @Value("${abacatepay.product-id:}")
+    private String monthlyProductId;
+
+    @Autowired
     private ModelMapper modelMapper;
 
     @Transactional
@@ -46,6 +55,11 @@ public class SolicitacaoServicoService {
         // 2. Busca e define o Trabalhador (Obrigatório nesta etapa)
         Trabalhador trabalhador = trabalhadorRepository.findById(dto.getTrabalhadorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Trabalhador não encontrado com ID: " + dto.getTrabalhadorId()));
+        if (monthlyProductId != null && !monthlyProductId.isBlank()
+                && !assinaturaPrestadorRepository.existsByTrabalhadorIdAndStatusAndActiveUntilAfter(
+                        trabalhador.getId(), "ACTIVE", java.time.Instant.now())) {
+            throw new BusinessRuleException("Este profissional precisa de uma assinatura mensal ativa.");
+        }
         solicitacao.setTrabalhador(trabalhador);
 
         // 3. Define dados da solicitação
