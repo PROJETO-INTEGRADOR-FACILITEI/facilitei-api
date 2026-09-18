@@ -16,10 +16,12 @@ public class AbacatePayClient {
     private final RestClient restClient;
     private final String apiKey;
     private final String productId;
+    private final String checkoutReturnUrl;
 
     public AbacatePayClient(@Value("${abacatepay.base-url:https://api.abacatepay.com/v2}") String baseUrl,
                             @Value("${abacatepay.api-key:}") String apiKey,
-                            @Value("${abacatepay.product-id:}") String productId) {
+                            @Value("${abacatepay.product-id:}") String productId,
+                            @Value("${app.frontend-url:http://localhost:5173}") String frontendUrl) {
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(10_000);
         requestFactory.setReadTimeout(15_000);
@@ -27,6 +29,7 @@ public class AbacatePayClient {
                 .requestFactory(requestFactory).build();
         this.apiKey = apiKey;
         this.productId = productId;
+        this.checkoutReturnUrl = frontendUrl.replaceAll("/+$", "") + "/dashboard/assinatura";
     }
 
     public String productId() { return productId; }
@@ -40,7 +43,9 @@ public class AbacatePayClient {
         JsonNode data = post("/subscriptions/create", Map.of(
                 "items", List.of(Map.of("id", productId, "quantity", 1)),
                 "methods", List.of("CARD"),
-                "externalId", externalId));
+                "externalId", externalId,
+                "returnUrl", checkoutReturnUrl,
+                "completionUrl", checkoutReturnUrl));
         String id = data.path("id").asText();
         String url = data.path("url").asText();
         long amount = data.path("amount").asLong();

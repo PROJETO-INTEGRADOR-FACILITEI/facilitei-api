@@ -3,6 +3,7 @@ package psg.facilitei.Services;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Base64;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
@@ -35,6 +36,16 @@ public class AutenticacaoPrestador {
         } catch (IllegalArgumentException ex) {
             throw unauthorized();
         }
+    }
+
+    public Trabalhador autenticar(String authorization, HttpSession session) {
+        if (session != null && "trabalhador".equals(session.getAttribute("auth.role"))) {
+            Object userId = session.getAttribute("auth.userId");
+            if (userId instanceof Long id) {
+                return trabalhadores.findById(id).orElseThrow(this::unauthorized);
+            }
+        }
+        return autenticar(authorization);
     }
 
     private ResponseStatusException unauthorized() {

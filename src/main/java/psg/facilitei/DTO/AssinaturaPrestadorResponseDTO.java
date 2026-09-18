@@ -7,4 +7,5 @@ public record AssinaturaPrestadorResponseDTO(
         boolean ativa,
         Instant ativaAte,
         String checkoutUrl,
-        Long valorCentavos) {}
+        Long valorCentavos,
+        boolean cobrancaHabilitada) {}

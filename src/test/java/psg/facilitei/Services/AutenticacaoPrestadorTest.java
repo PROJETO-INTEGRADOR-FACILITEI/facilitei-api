@@ -3,6 +3,7 @@ package psg.facilitei.Services;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Optional;
+import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 import psg.facilitei.Entity.Trabalhador;
@@ -27,6 +28,22 @@ class AutenticacaoPrestadorTest {
         assertThrows(ResponseStatusException.class,
                 () -> auth.autenticar("Basic invalid-base64"));
         assertThrows(ResponseStatusException.class, () -> auth.autenticar(null));
+    }
+
+    @Test
+    void autenticaComSessaoDoPrestadorSemExporSenha() {
+        TrabalhadorRepository repository = mock(TrabalhadorRepository.class);
+        HttpSession session = mock(HttpSession.class);
+        Trabalhador trabalhador = new Trabalhador();
+        trabalhador.setId(42L);
+        when(session.getAttribute("auth.role")).thenReturn("trabalhador");
+        when(session.getAttribute("auth.userId")).thenReturn(42L);
+        when(repository.findById(42L)).thenReturn(Optional.of(trabalhador));
+
+        AutenticacaoPrestador auth = new AutenticacaoPrestador(repository);
+
+        assertSame(trabalhador, auth.autenticar(null, session));
+        verify(repository, never()).findByEmail(anyString());
     }
 
     private String basic(String credentials) {

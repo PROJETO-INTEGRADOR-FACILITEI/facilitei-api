@@ -2,6 +2,7 @@ package psg.facilitei.Controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,19 +33,25 @@ public class AssinaturaPrestadorController {
     }
 
     @GetMapping
-    public AssinaturaPrestadorResponseDTO consultar(@RequestHeader(value = "Authorization", required = false) String authorization) {
-        Trabalhador trabalhador = autenticacao.autenticar(authorization);
+    public AssinaturaPrestadorResponseDTO consultar(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            HttpServletRequest request) {
+        Trabalhador trabalhador = autenticar(authorization, request);
         return assinaturas.consultar(trabalhador.getId());
     }
 
     @PostMapping("/checkout")
-    public AssinaturaPrestadorResponseDTO iniciar(@RequestHeader(value = "Authorization", required = false) String authorization) {
-        return assinaturas.iniciar(autenticacao.autenticar(authorization));
+    public AssinaturaPrestadorResponseDTO iniciar(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            HttpServletRequest request) {
+        return assinaturas.iniciar(autenticar(authorization, request));
     }
 
     @PostMapping("/cancelar")
-    public AssinaturaPrestadorResponseDTO cancelar(@RequestHeader(value = "Authorization", required = false) String authorization) {
-        return assinaturas.cancelar(autenticacao.autenticar(authorization).getId());
+    public AssinaturaPrestadorResponseDTO cancelar(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            HttpServletRequest request) {
+        return assinaturas.cancelar(autenticar(authorization, request).getId());
     }
 
     @PostMapping("/webhook")
@@ -59,5 +66,9 @@ public class AssinaturaPrestadorController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "JSON do webhook inválido.");
         }
         return ResponseEntity.ok().build();
+    }
+
+    private Trabalhador autenticar(String authorization, HttpServletRequest request) {
+        return autenticacao.autenticar(authorization, request.getSession(false));
     }
 }

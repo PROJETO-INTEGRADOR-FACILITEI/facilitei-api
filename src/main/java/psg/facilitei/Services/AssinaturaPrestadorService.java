@@ -41,7 +41,8 @@ public class AssinaturaPrestadorService {
     public AssinaturaPrestadorResponseDTO consultar(Long trabalhadorId) {
         return assinaturas.findByTrabalhadorId(trabalhadorId)
                 .map(this::resposta)
-                .orElse(new AssinaturaPrestadorResponseDTO("NONE", false, null, null, null));
+                .orElse(new AssinaturaPrestadorResponseDTO(
+                        "NONE", false, null, null, null, cobrancaHabilitada()));
     }
 
     @Transactional
@@ -183,6 +184,11 @@ public class AssinaturaPrestadorService {
                 && assinatura.getActiveUntil().isAfter(Instant.now());
         return new AssinaturaPrestadorResponseDTO(
                 ativa || !"ACTIVE".equals(assinatura.getStatus()) ? assinatura.getStatus() : "EXPIRED",
-                ativa, assinatura.getActiveUntil(), assinatura.getCheckoutUrl(), assinatura.getAmountCents());
+                ativa, assinatura.getActiveUntil(), assinatura.getCheckoutUrl(), assinatura.getAmountCents(),
+                cobrancaHabilitada());
+    }
+
+    private boolean cobrancaHabilitada() {
+        return !abacatePay.productId().isBlank();
     }
 }

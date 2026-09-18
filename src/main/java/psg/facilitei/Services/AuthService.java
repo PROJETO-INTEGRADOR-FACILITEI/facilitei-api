@@ -2,7 +2,9 @@ package psg.facilitei.Services;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 import psg.facilitei.DTO.ClienteResponseDTO;
 import psg.facilitei.DTO.LoginResponseDTO;
 import psg.facilitei.DTO.TrabalhadorResponseDTO;
@@ -52,5 +54,24 @@ public class AuthService {
     public boolean emailExists(String email) {
         return clienteRepository.findByEmail(email).isPresent() ||
                trabalhadorRepository.findByEmail(email).isPresent();
+    }
+
+    public LoginResponseDTO restaurarSessao(String role, Long userId) {
+        if ("cliente".equals(role)) {
+            Cliente cliente = clienteRepository.findById(userId)
+                    .orElseThrow(this::sessaoInvalida);
+            return new LoginResponseDTO("cliente", modelMapper.map(cliente, ClienteResponseDTO.class));
+        }
+        if ("trabalhador".equals(role)) {
+            Trabalhador trabalhador = trabalhadorRepository.findById(userId)
+                    .orElseThrow(this::sessaoInvalida);
+            return new LoginResponseDTO(
+                    "trabalhador", modelMapper.map(trabalhador, TrabalhadorResponseDTO.class));
+        }
+        throw sessaoInvalida();
+    }
+
+    private ResponseStatusException sessaoInvalida() {
+        return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sessão inválida ou expirada.");
     }
 }
