@@ -73,6 +73,16 @@ public class PortfolioController {
         return ResponseEntity.ok(portfolioService.adicionarImagens(id, imagens));
     }
 
+    @DeleteMapping("/{portfolioId}/imagens/{imagemId}")
+    @Operation(summary = "Remove uma imagem do portfolio e do Cloudinary", responses = {
+            @ApiResponse(responseCode = "204", description = "Imagem removida com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Portfolio ou imagem não encontrado")
+    })
+    public ResponseEntity<Void> removerImagem(@PathVariable Long portfolioId, @PathVariable Long imagemId) {
+        portfolioService.removerImagem(portfolioId, imagemId);
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/{id}")
     @Operation(summary = "Deleta um portfolio por ID", responses = {
             @ApiResponse(responseCode = "204", description = "Portfolio deletado com sucesso"),

@@ -19,6 +19,6 @@ public class PortfolioResponseDTO {
     @Schema(description = "ID do trabalhador dono do portfolio", example = "1")
     private Long trabalhadorId;
 
-    @Schema(description = "URLs das imagens do portfolio")
-    private List<String> urlsImagens;
+    @Schema(description = "Imagens do portfolio")
+    private List<PortfolioImagemResponseDTO> imagens;
 }

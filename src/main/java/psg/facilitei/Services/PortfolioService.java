@@ -6,15 +6,17 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import psg.facilitei.DTO.PortfolioRequestDTO;
+import psg.facilitei.DTO.PortfolioImagemResponseDTO;
 import psg.facilitei.DTO.PortfolioResponseDTO;
 import psg.facilitei.Entity.Portfolio;
+import psg.facilitei.Entity.PortfolioImagem;
 import psg.facilitei.Entity.Trabalhador;
 import psg.facilitei.Exceptions.BusinessRuleException;
 import psg.facilitei.Exceptions.ResourceNotFoundException;
 import psg.facilitei.Repository.PortfolioRepository;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
 
 @Service
 public class PortfolioService {
@@ -38,7 +40,7 @@ public class PortfolioService {
 
         Portfolio portfolio = new Portfolio();
         portfolio.setTrabalhador(trabalhador);
-        portfolio.setUrlsImagens(uploadImagens(dto.getImagens()));
+        adicionarUploads(portfolio, dto.getImagens());
 
         Portfolio salvo = portfolioRepository.save(portfolio);
         return toResponseDTO(salvo);
@@ -64,33 +66,67 @@ public class PortfolioService {
     @Transactional
     public PortfolioResponseDTO adicionarImagens(Long id, List<MultipartFile> imagens) {
         Portfolio portfolio = buscarEntidadePorId(id);
-        portfolio.getUrlsImagens().addAll(uploadImagens(imagens));
+        adicionarUploads(portfolio, imagens);
 
         Portfolio atualizado = portfolioRepository.save(portfolio);
         return toResponseDTO(atualizado);
     }
 
     @Transactional
+    public void removerImagem(Long portfolioId, Long imagemId) {
+        Portfolio portfolio = buscarEntidadePorId(portfolioId);
+        PortfolioImagem imagem = portfolio.getImagens().stream()
+                .filter(item -> item.getId().equals(imagemId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Imagem não encontrada neste portfolio com ID: " + imagemId));
+
+        cloudinaryService.removerImagem(imagem.getPublicId());
+        portfolio.removerImagem(imagem);
+        portfolioRepository.save(portfolio);
+    }
+
+    @Transactional
     public void deletar(Long id) {
-        if (!portfolioRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Portfolio não encontrado para exclusão.");
-        }
+        Portfolio portfolio = buscarEntidadePorId(id);
+        portfolio.getImagens().forEach(imagem -> cloudinaryService.removerImagem(imagem.getPublicId()));
         portfolioRepository.deleteById(id);
     }
 
-    private List<String> uploadImagens(List<MultipartFile> imagens) {
+    private void adicionarUploads(Portfolio portfolio, List<MultipartFile> imagens) {
         if (imagens == null || imagens.isEmpty()) {
             throw new BusinessRuleException("É necessário enviar ao menos uma imagem.");
         }
-        return imagens.stream()
-                .map(cloudinaryService::uploadArquivo)
-                .collect(Collectors.toList());
+
+        List<PortfolioImagem> imagensEnviadas = new ArrayList<>();
+        try {
+            for (MultipartFile arquivo : imagens) {
+                CloudinaryService.UploadImagemResult upload = cloudinaryService.uploadImagemPortfolio(arquivo);
+                PortfolioImagem imagem = new PortfolioImagem();
+                imagem.setUrl(upload.url());
+                imagem.setPublicId(upload.publicId());
+                portfolio.adicionarImagem(imagem);
+                imagensEnviadas.add(imagem);
+            }
+        } catch (RuntimeException exception) {
+            imagensEnviadas.forEach(imagem -> {
+                try {
+                    cloudinaryService.removerImagem(imagem.getPublicId());
+                } catch (RuntimeException ignored) {
+                    // Preserva a falha original do upload.
+                }
+                portfolio.removerImagem(imagem);
+            });
+            throw exception;
+        }
     }
 
     private PortfolioResponseDTO toResponseDTO(Portfolio portfolio) {
         PortfolioResponseDTO dto = new PortfolioResponseDTO();
         dto.setId(portfolio.getId());
-        dto.setUrlsImagens(portfolio.getUrlsImagens());
+        dto.setImagens(portfolio.getImagens().stream()
+                .map(imagem -> new PortfolioImagemResponseDTO(imagem.getId(), imagem.getUrl()))
+                .toList());
         if (portfolio.getTrabalhador() != null) {
             dto.setTrabalhadorId(portfolio.getTrabalhador().getId());
         }

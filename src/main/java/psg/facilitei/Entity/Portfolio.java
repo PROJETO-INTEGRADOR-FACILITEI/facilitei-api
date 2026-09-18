@@ -29,9 +29,20 @@ public class Portfolio {
     @ToString.Exclude
     private Trabalhador trabalhador;
 
-    @ElementCollection
-    @CollectionTable(name = "portfolio_imagens", joinColumns = @JoinColumn(name = "portfolio_id"))
-    @Column(name = "url_imagem", length = 500)
-    private List<String> urlsImagens = new ArrayList<>();
+    @OneToMany(mappedBy = "portfolio", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("id ASC")
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    private List<PortfolioImagem> imagens = new ArrayList<>();
+
+    public void adicionarImagem(PortfolioImagem imagem) {
+        imagem.setPortfolio(this);
+        imagens.add(imagem);
+    }
+
+    public void removerImagem(PortfolioImagem imagem) {
+        imagens.remove(imagem);
+        imagem.setPortfolio(null);
+    }
 
 }
