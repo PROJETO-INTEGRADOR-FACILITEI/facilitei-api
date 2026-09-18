@@ -7,6 +7,7 @@ import psg.facilitei.DTO.EnderecoResponseDTO;
 import psg.facilitei.DTO.ServicoResponseDTO;
 import psg.facilitei.DTO.TrabalhadorRequestDTO;
 import psg.facilitei.DTO.TrabalhadorResponseDTO;
+import psg.facilitei.DTO.TrabalhadorUpdateDTO;
 import psg.facilitei.Entity.AvaliacaoTrabalhador;
 import psg.facilitei.Entity.Endereco;
 import psg.facilitei.Entity.Servico;
@@ -46,25 +47,28 @@ public class TrabalhadorService {
                 .collect(Collectors.toList());
     }
 
-    public TrabalhadorResponseDTO atualizar(Long id, TrabalhadorRequestDTO dto) {
+    public TrabalhadorResponseDTO atualizar(Long id, TrabalhadorUpdateDTO dto) {
         Trabalhador trabalhador = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Trabalhador não encontrado com ID: " + id));
 
         if (dto.getNome() != null) trabalhador.setNome(HtmlSanitizer.sanitize(dto.getNome()));
         if (dto.getEmail() != null) trabalhador.setEmail(dto.getEmail());
-        if (dto.getSenha() != null) trabalhador.setSenha((dto.getSenha()));
         if (dto.getDisponibilidade() != null) trabalhador.setDisponibilidade(dto.getDisponibilidade());
         if (dto.getSobre() != null) trabalhador.setSobre(HtmlSanitizer.sanitize(dto.getSobre()));
         if (dto.getTelefone() != null) trabalhador.setTelefone(dto.getTelefone());
         if (dto.getAvatarUrl() != null) trabalhador.setUrlFoto(dto.getAvatarUrl());
+        if (dto.getHabilidades() != null) trabalhador.setHabilidades(dto.getHabilidades());
+        if (dto.getServicoPrincipal() != null) trabalhador.setServicoPrincipal(dto.getServicoPrincipal());
 
-        Endereco endereco = trabalhador.getEndereco();
-        if (endereco.getRua() != null) endereco.setRua(dto.getEndereco().getRua());
-        if (endereco.getNumero() != null)endereco.setNumero(dto.getEndereco().getNumero());
-        if (endereco.getBairro() != null)endereco.setBairro(dto.getEndereco().getBairro());
-        if (endereco.getCidade() != null)endereco.setCidade(dto.getEndereco().getCidade());
-        if (endereco.getEstado() != null)endereco.setEstado(dto.getEndereco().getEstado());
-        if (endereco.getCep() != null)endereco.setCep(dto.getEndereco().getCep());
+        if (dto.getEndereco() != null) {
+            Endereco endereco = trabalhador.getEndereco();
+            endereco.setRua(dto.getEndereco().getRua());
+            endereco.setNumero(dto.getEndereco().getNumero());
+            endereco.setBairro(dto.getEndereco().getBairro());
+            endereco.setCidade(dto.getEndereco().getCidade());
+            endereco.setEstado(dto.getEndereco().getEstado());
+            endereco.setCep(dto.getEndereco().getCep());
+        }
 
         return toResponseDTO(repository.save(trabalhador));
     }

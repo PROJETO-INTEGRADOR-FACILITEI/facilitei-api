@@ -19,6 +19,7 @@ import jakarta.validation.Valid;
 import psg.facilitei.Repository.TrabalhadorRepository;
 import psg.facilitei.DTO.TrabalhadorRequestDTO;
 import psg.facilitei.DTO.TrabalhadorResponseDTO;
+import psg.facilitei.DTO.TrabalhadorUpdateDTO;
 import psg.facilitei.Entity.Trabalhador;
 import psg.facilitei.Services.TrabalhadorService;
 import psg.facilitei.Exceptions.ErrorResponseDTO;
@@ -63,7 +64,7 @@ public class TrabalhadorController {
         })
         @PutMapping("/atualizar/{id}")
         public TrabalhadorResponseDTO atualizarTrabalhador(@PathVariable Long id,
-                        @Valid @RequestBody TrabalhadorRequestDTO dto) {
+                        @Valid @RequestBody TrabalhadorUpdateDTO dto) {
                 return service.atualizar(id, dto);
         }
 
