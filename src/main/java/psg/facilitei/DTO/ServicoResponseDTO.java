@@ -7,8 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -23,9 +21,6 @@ public class ServicoResponseDTO {
 
     @Schema(description = "Descrição detalhada do serviço", example = "Serviço completo de instalação de ar condicionado.")
     private String descricao;
-
-    @Schema(description = "Preço do serviço", example = "150.00")
-    private BigDecimal preco;
 
     @Schema(description = "ID do trabalhador associado a este serviço", example = "1")
     private Long trabalhadorId;

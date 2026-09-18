@@ -3,7 +3,6 @@ package psg.facilitei.DTO;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import psg.facilitei.Entity.Enum.StatusServico;
 import psg.facilitei.Entity.Enum.TipoServico;
@@ -11,8 +10,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
 
 @Data
 @NoArgsConstructor
@@ -45,8 +42,4 @@ public class ServicoRequestDTO {
     @Schema(description = "Status do serviço", example = "EM_ANDAMENTO")
     private StatusServico statusServico;
 
-    @NotNull(message = "O preço do serviço é obrigatório.")
-    @Positive(message = "O preço do serviço deve ser positivo.")
-    @Schema(description = "Preço do serviço", example = "150.00")
-    private BigDecimal preco;
 }

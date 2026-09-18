@@ -4,8 +4,6 @@ package psg.facilitei.Entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
-import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -32,11 +30,6 @@ public class Servico {
     @NotBlank(message = "A descrição do serviço é obrigatória")
     @Column(nullable = false, columnDefinition = "TEXT")
     private String descricao;
-
-    @NotNull(message = "O preço do serviço é obrigatório")
-    @Positive(message = "O preço do serviço deve ser positivo")
-    @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal preco;
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "avaliacao_id")
