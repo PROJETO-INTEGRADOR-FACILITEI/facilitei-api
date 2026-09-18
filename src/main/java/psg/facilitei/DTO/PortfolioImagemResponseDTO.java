@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import psg.facilitei.Entity.Enum.TipoServico;
 
 @Data
 @NoArgsConstructor
@@ -16,4 +17,7 @@ public class PortfolioImagemResponseDTO {
 
     @Schema(description = "URL segura da imagem no Cloudinary")
     private String url;
+
+    @Schema(description = "Especialidade usada para agrupar a imagem", example = "ELETRICISTA")
+    private TipoServico tipoServico;
 }

@@ -2,6 +2,8 @@ package psg.facilitei.Entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -14,6 +16,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import psg.facilitei.Entity.Enum.TipoServico;
 
 @Entity
 @Table(name = "portfolio_imagens")
@@ -37,4 +40,8 @@ public class PortfolioImagem {
 
     @Column(name = "public_id", length = 255)
     private String publicId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_servico", length = 64)
+    private TipoServico tipoServico;
 }

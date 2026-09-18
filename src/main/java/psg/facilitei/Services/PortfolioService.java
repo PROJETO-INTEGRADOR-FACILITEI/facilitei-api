@@ -11,6 +11,7 @@ import psg.facilitei.DTO.PortfolioResponseDTO;
 import psg.facilitei.Entity.Portfolio;
 import psg.facilitei.Entity.PortfolioImagem;
 import psg.facilitei.Entity.Trabalhador;
+import psg.facilitei.Entity.Enum.TipoServico;
 import psg.facilitei.Exceptions.BusinessRuleException;
 import psg.facilitei.Exceptions.ResourceNotFoundException;
 import psg.facilitei.Repository.PortfolioRepository;
@@ -40,7 +41,7 @@ public class PortfolioService {
 
         Portfolio portfolio = new Portfolio();
         portfolio.setTrabalhador(trabalhador);
-        adicionarUploads(portfolio, dto.getImagens());
+        adicionarUploads(portfolio, dto.getImagens(), dto.getTipoServico());
 
         Portfolio salvo = portfolioRepository.save(portfolio);
         return toResponseDTO(salvo);
@@ -64,9 +65,9 @@ public class PortfolioService {
     }
 
     @Transactional
-    public PortfolioResponseDTO adicionarImagens(Long id, List<MultipartFile> imagens) {
+    public PortfolioResponseDTO adicionarImagens(Long id, List<MultipartFile> imagens, TipoServico tipoServico) {
         Portfolio portfolio = buscarEntidadePorId(id);
-        adicionarUploads(portfolio, imagens);
+        adicionarUploads(portfolio, imagens, tipoServico);
 
         Portfolio atualizado = portfolioRepository.save(portfolio);
         return toResponseDTO(atualizado);
@@ -93,7 +94,7 @@ public class PortfolioService {
         portfolioRepository.deleteById(id);
     }
 
-    private void adicionarUploads(Portfolio portfolio, List<MultipartFile> imagens) {
+    private void adicionarUploads(Portfolio portfolio, List<MultipartFile> imagens, TipoServico tipoServico) {
         if (imagens == null || imagens.isEmpty()) {
             throw new BusinessRuleException("É necessário enviar ao menos uma imagem.");
         }
@@ -105,6 +106,7 @@ public class PortfolioService {
                 PortfolioImagem imagem = new PortfolioImagem();
                 imagem.setUrl(upload.url());
                 imagem.setPublicId(upload.publicId());
+                imagem.setTipoServico(tipoServico);
                 portfolio.adicionarImagem(imagem);
                 imagensEnviadas.add(imagem);
             }
@@ -125,7 +127,8 @@ public class PortfolioService {
         PortfolioResponseDTO dto = new PortfolioResponseDTO();
         dto.setId(portfolio.getId());
         dto.setImagens(portfolio.getImagens().stream()
-                .map(imagem -> new PortfolioImagemResponseDTO(imagem.getId(), imagem.getUrl()))
+                .map(imagem -> new PortfolioImagemResponseDTO(
+                        imagem.getId(), imagem.getUrl(), imagem.getTipoServico()))
                 .toList());
         if (portfolio.getTrabalhador() != null) {
             dto.setTrabalhadorId(portfolio.getTrabalhador().getId());
