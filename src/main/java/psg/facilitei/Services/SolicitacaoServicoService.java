@@ -70,11 +70,7 @@ public class SolicitacaoServicoService {
         // 4. O serviço começa como NULL (será criado quando o trabalhador aceitar)
         solicitacao.setServico(null);
 
-        if (dto.getStatusSolicitacao() != null) {
-            solicitacao.setStatusSolicitacao(dto.getStatusSolicitacao());
-        } else {
-            solicitacao.setStatusSolicitacao(StatusSolicitacao.PENDENTE);
-        }
+        solicitacao.setStatusSolicitacao(StatusSolicitacao.PENDENTE);
 
         SolicitacaoServico salvo = solicitacaoServicoRepository.save(solicitacao);
         
@@ -91,6 +87,18 @@ public class SolicitacaoServicoService {
     }
 
     @Transactional(readOnly = true)
+    public List<SolicitacaoServicoResponseDTO> listarPorCliente(Long clienteId) {
+        return solicitacaoServicoRepository.findByClienteId(clienteId).stream()
+                .map(this::mapToResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<SolicitacaoServicoResponseDTO> listarPorTrabalhador(Long trabalhadorId) {
+        return solicitacaoServicoRepository.findByTrabalhadorId(trabalhadorId).stream()
+                .map(this::mapToResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
     public SolicitacaoServicoResponseDTO buscarPorId(Long id) {
         SolicitacaoServico solicitacao = solicitacaoServicoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Solicitação não encontrada ID: " + id));
@@ -102,9 +110,13 @@ public class SolicitacaoServicoService {
         SolicitacaoServico existente = solicitacaoServicoRepository.findById(id)
              .orElseThrow(() -> new ResourceNotFoundException("Solicitação não encontrada ID: " + id));
         
-        if (dto.getStatusSolicitacao() != null) {
-            existente.setStatusSolicitacao(dto.getStatusSolicitacao());
+        if (dto.getStatusSolicitacao() != StatusSolicitacao.RECUSADA) {
+            throw new BusinessRuleException("O prestador só pode recusar uma solicitação por este endpoint.");
         }
+        if (existente.getStatusSolicitacao() != StatusSolicitacao.PENDENTE) {
+            throw new BusinessRuleException("A solicitação já foi processada.");
+        }
+        existente.setStatusSolicitacao(StatusSolicitacao.RECUSADA);
         // Adicione outras atualizações conforme necessário
 
         return mapToResponse(solicitacaoServicoRepository.save(existente));

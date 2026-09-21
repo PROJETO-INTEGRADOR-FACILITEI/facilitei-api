@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import psg.facilitei.DTO.AvaliacaoClienteRequestDTO;
 import psg.facilitei.DTO.AvaliacaoClienteResponseDTO;
 import psg.facilitei.Services.AvaliacaoClienteService;
+import psg.facilitei.Security.AccessControlService;
 
 import jakarta.validation.Valid;
 
@@ -18,9 +19,19 @@ public class AvaliacaoClienteController {
     @Autowired
     private AvaliacaoClienteService avaliacaoClienteService;
 
+    @Autowired
+    private AccessControlService access;
+
     @PostMapping
     public ResponseEntity<AvaliacaoClienteResponseDTO> criarAvaliacao(
             @Valid @RequestBody AvaliacaoClienteRequestDTO dto) {
+        access.requireTrabalhador(dto.getTrabalhadorId());
+        if (dto.getServicoId() == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "O serviço é obrigatório.");
+        }
+        access.requireServiceWorker(dto.getServicoId());
+        access.requireServiceParties(dto.getServicoId(), dto.getClienteId(), dto.getTrabalhadorId());
         AvaliacaoClienteResponseDTO response = avaliacaoClienteService.criarAvaliacao(dto);
         return ResponseEntity.ok(response);
     }
@@ -39,6 +50,7 @@ public class AvaliacaoClienteController {
 
     @DeleteMapping("/{avaliacaoId}")
     public ResponseEntity<Void> deletarAvaliacao(@PathVariable Long avaliacaoId) {
+        access.requireClientReviewAuthor(avaliacaoId);
         avaliacaoClienteService.deletarAvaliacao(avaliacaoId);
         return ResponseEntity.noContent().build();
     }

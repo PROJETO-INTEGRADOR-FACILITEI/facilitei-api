@@ -23,6 +23,7 @@ public class AvaliacaoClienteRequestDTO {
 
     // --- ADICIONE ISTO ---
     @Schema(description = "ID do serviço realizado")
+    @NotNull(message = "O ID do serviço é obrigatório.")
     private Long servicoId;
     // ---------------------
 

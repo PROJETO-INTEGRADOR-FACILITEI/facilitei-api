@@ -10,6 +10,6 @@ public class ResetPasswordRequestDTO {
     private String token;
 
     @NotBlank(message = "A nova senha é obrigatória")
-    @Size(min = 6, message = "A senha deve ter no mínimo 6 caracteres")
+    @Size(min = 12, max = 72, message = "A senha deve ter entre 12 e 72 caracteres")
     private String novaSenha;
 }

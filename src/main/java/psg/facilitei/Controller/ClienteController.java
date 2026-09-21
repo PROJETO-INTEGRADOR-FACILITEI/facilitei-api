@@ -14,6 +14,7 @@ import psg.facilitei.DTO.*;
 import psg.facilitei.Entity.Cliente;
 import psg.facilitei.Exceptions.ErrorResponseDTO;
 import psg.facilitei.Services.ClienteService;
+import psg.facilitei.Security.AccessControlService;
 
 import jakarta.validation.Valid;
 
@@ -28,6 +29,9 @@ public class ClienteController {
 
         @Autowired
         private ClienteService clienteService;
+
+        @Autowired
+        private AccessControlService access;
 
         private Logger logger = Logger.getLogger(ClienteController.class.getName());
 
@@ -49,6 +53,7 @@ public class ClienteController {
                         @ApiResponse(responseCode = "500", description = "Erro interno do servidor.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
         })
         public ResponseEntity<EntityModel<ClienteResponseDTO>> getById(@PathVariable Long id) {
+                access.requireCliente(id);
                 logger.info("Buscando cliente por ID");
                 return ResponseEntity.ok(clienteService.findById(id));
         }
@@ -60,6 +65,7 @@ public class ClienteController {
                         @ApiResponse(responseCode = "500", description = "Erro interno do servidor.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
         })
         public ResponseEntity<List<AvaliacaoClienteResponseDTO>> getAvaliacoes(@PathVariable Long id) {
+                access.requireCliente(id);
                 logger.info("Buscando Avaliações que o cliente " + id + " recebeu");
                 return ResponseEntity.ok(clienteService.getAvaliacoes(id));
         }
@@ -71,6 +77,7 @@ public class ClienteController {
                         @ApiResponse(responseCode = "500", description = "Erro interno do servidor.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
         })
         public ResponseEntity<List<AvaliacaoServicoResponseDTO>> getAvaliacoesServico(@PathVariable Long id) {
+                access.requireCliente(id);
                 logger.info("Busca avaliações que o cliente " + id + " fez para os serviços");
                 return ResponseEntity.ok(clienteService.getAvaliacoesServico(id));
         }
@@ -83,6 +90,7 @@ public class ClienteController {
         })
         public ResponseEntity<ClienteResponseDTO> editar(@PathVariable Long id,
                         @Valid @RequestBody ClienteRequestDTO dto) {
+                access.requireCliente(id);
                 logger.info("Editando cliente");
                 return clienteService.update(id, dto);
         }
@@ -94,24 +102,9 @@ public class ClienteController {
                         @ApiResponse(responseCode = "500", description = "Erro interno do servidor.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
         })
         public ResponseEntity<Void> deletar(@PathVariable Long id) {
+                access.requireCliente(id);
                 logger.info("Deletando cliente");
                 clienteService.delete(id);
                 return ResponseEntity.noContent().build();
         }
-        @PatchMapping("/{id}")
-    public ResponseEntity<Void> atualizarNota(@PathVariable Long id, @RequestBody Map<String, Object> updates) {
-        if (updates.containsKey("notaCliente")) {
-            Cliente c = clienteService.buscarEntidadePorId(id);
-            // Converte para Double (o JSON pode mandar como Integer ou Double)
-            Object notaObj = updates.get("notaCliente");
-            Double novaNota = Double.valueOf(notaObj.toString());
-            
-            c.setNotaCliente(novaNota);
-            
-            clienteService.atualizarNota(id, novaNota); // Vamos criar esse método no Service
-            
-            return ResponseEntity.ok().build();
-        }
-        return ResponseEntity.badRequest().build();
-    }
 }

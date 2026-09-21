@@ -61,6 +61,8 @@ public class TrabalhadorService {
     private AvaliacaoServicoRepository avaliacaoServicoRepository;
     @Autowired
     private AssinaturaPrestadorRepository assinaturaPrestadorRepository;
+    @Autowired
+    private PasswordHashService passwordHashService;
 
 
     public TrabalhadorResponseDTO createTrabalhador(TrabalhadorRequestDTO trabalhadorRequestDTO) {
@@ -196,7 +198,7 @@ public class TrabalhadorService {
         trabalhador.setNome(HtmlSanitizer.sanitize(dto.getNome()));
         trabalhador.setEmail(dto.getEmail());
         trabalhador.setNotaTrabalhador(dto.getNotaTrabalhador());
-        trabalhador.setSenha(dto.getSenha());
+        trabalhador.setSenha(passwordHashService.hash(dto.getSenha()));
         trabalhador.setDisponibilidade(dto.getDisponibilidade());
         trabalhador.setSobre(HtmlSanitizer.sanitize(dto.getSobre()));
         trabalhador.setTelefone(dto.getTelefone());

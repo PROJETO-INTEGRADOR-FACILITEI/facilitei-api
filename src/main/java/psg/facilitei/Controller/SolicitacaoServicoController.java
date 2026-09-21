@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.*;
 import psg.facilitei.DTO.SolicitacaoServicoRequestDTO;
 import psg.facilitei.DTO.SolicitacaoServicoResponseDTO;
 import psg.facilitei.Services.SolicitacaoServicoService;
+import psg.facilitei.Security.AccessControlService;
+import psg.facilitei.Security.AuthenticatedPrincipal;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -29,13 +31,19 @@ public class SolicitacaoServicoController {
     @Autowired
     private SolicitacaoServicoService solicitacaoServicoService;
 
+    @Autowired
+    private AccessControlService access;
+
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Lista todas as solicitações de serviço", responses = {
             @ApiResponse(responseCode = "200", description = "Lista de solicitações de serviço retornada com sucesso", content = @Content(mediaType = "application/json", schema = @Schema(implementation = SolicitacaoServicoResponseDTO.class))),
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
     public ResponseEntity<List<SolicitacaoServicoResponseDTO>> listarTodos() {
-        List<SolicitacaoServicoResponseDTO> lista = solicitacaoServicoService.listarTodos();
+        AuthenticatedPrincipal actor = access.current();
+        List<SolicitacaoServicoResponseDTO> lista = actor.isCliente()
+                ? solicitacaoServicoService.listarPorCliente(actor.id())
+                : solicitacaoServicoService.listarPorTrabalhador(actor.id());
         return ResponseEntity.ok(lista);
     }
 
@@ -46,6 +54,7 @@ public class SolicitacaoServicoController {
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
     public ResponseEntity<SolicitacaoServicoResponseDTO> buscarPorId(@PathVariable Long id) {
+        access.requireSolicitationParticipant(id);
         SolicitacaoServicoResponseDTO solicitacao = solicitacaoServicoService.buscarPorId(id);
         return ResponseEntity.ok(solicitacao);
     }
@@ -57,6 +66,7 @@ public class SolicitacaoServicoController {
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
     public ResponseEntity<SolicitacaoServicoResponseDTO> criar(@Valid @RequestBody SolicitacaoServicoRequestDTO dto) {
+        access.requireCliente(dto.getClienteId());
         SolicitacaoServicoResponseDTO criada = solicitacaoServicoService.criar(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(criada);
     }
@@ -70,6 +80,7 @@ public class SolicitacaoServicoController {
     })
     public ResponseEntity<SolicitacaoServicoResponseDTO> atualizar(@PathVariable Long id,
             @Valid @RequestBody SolicitacaoServicoRequestDTO dto) {
+        access.requireSolicitationWorker(id);
         SolicitacaoServicoResponseDTO atualizada = solicitacaoServicoService.atualizar(id, dto);
         return ResponseEntity.ok(atualizada);
     }
@@ -81,6 +92,7 @@ public class SolicitacaoServicoController {
     })
     public ResponseEntity<SolicitacaoServicoResponseDTO> atualizarParcial(@PathVariable Long id,
             @RequestBody SolicitacaoServicoRequestDTO dto) {
+        access.requireSolicitationWorker(id);
         // Reutiliza o serviço que já trata nulos
         SolicitacaoServicoResponseDTO atualizada = solicitacaoServicoService.atualizar(id, dto);
         return ResponseEntity.ok(atualizada);
@@ -93,6 +105,7 @@ public class SolicitacaoServicoController {
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
+        access.requireSolicitationClient(id);
         solicitacaoServicoService.deletar(id);
         return ResponseEntity.noContent().build();
     }

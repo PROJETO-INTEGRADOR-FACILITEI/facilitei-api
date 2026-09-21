@@ -6,6 +6,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import psg.facilitei.Entity.AssinaturaPrestador;
@@ -19,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @ActiveProfiles("test")
 @Import(TrabalhadorService.class)
 class TrabalhadorAssinaturaFiltroTest {
+    @MockBean PasswordHashService passwordHashService;
     @Autowired TrabalhadorService service;
     @Autowired TrabalhadorRepository trabalhadores;
     @Autowired AssinaturaPrestadorRepository assinaturas;

@@ -50,6 +50,9 @@ public class ClienteService {
     @Autowired
     private ModelMapper modelMapper;
 
+    @Autowired
+    private PasswordHashService passwordHashService;
+
     private Logger logger = Logger.getLogger(ClienteService.class.getName());
 
     // ===================== CRIAÇÃO =====================
@@ -57,6 +60,7 @@ public class ClienteService {
         logger.info("Criando cliente");
         Cliente cliente = modelMapper.map(dto, Cliente.class);
         cliente.setNome(HtmlSanitizer.sanitize(cliente.getNome()));
+        cliente.setSenha(passwordHashService.hash(dto.getSenha()));
 
         // CORREÇÃO AQUI: Mapeando manualmente o avatarUrl do DTO para urlFoto da Entidade
         if (dto.getAvatarUrl() != null) {
@@ -162,7 +166,9 @@ public class ClienteService {
 
         if (dto.getNome() != null) clienteAntigo.setNome(HtmlSanitizer.sanitize(dto.getNome()));
         if (dto.getEmail() != null) clienteAntigo.setEmail(dto.getEmail());
-        if (dto.getSenha() != null) clienteAntigo.setSenha(dto.getSenha());
+        if (dto.getSenha() != null && !dto.getSenha().isBlank()) {
+            clienteAntigo.setSenha(passwordHashService.hash(dto.getSenha()));
+        }
         if(dto.getTelefone() != null) clienteAntigo.setTelefone(dto.getTelefone());
         if (dto.getAvatarUrl() != null) clienteAntigo.setUrlFoto(dto.getAvatarUrl());
 

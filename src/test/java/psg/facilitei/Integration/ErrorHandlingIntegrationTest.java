@@ -12,6 +12,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -24,6 +26,7 @@ class ErrorHandlingIntegrationTest {
     @Test
     void jsonMalformado_retorna400EmVezDe500() throws Exception {
         mockMvc.perform(post("/api/clientes")
+                        .with(csrf())
                         .contentType("application/json")
                         .content("{nome: invalido"))
                 .andExpect(status().isBadRequest())
@@ -32,14 +35,14 @@ class ErrorHandlingIntegrationTest {
 
     @Test
     void idNaoNumericoNaUrl_retorna400EmVezDe500() throws Exception {
-        mockMvc.perform(get("/api/clientes/id/abc"))
+        mockMvc.perform(get("/api/clientes/id/abc").with(user("test")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400));
     }
 
     @Test
     void metodoHttpNaoSuportado_retorna405EmVezDe500() throws Exception {
-        mockMvc.perform(put("/api/clientes/id/1"))
+        mockMvc.perform(put("/api/clientes/id/1").with(user("test")).with(csrf()))
                 .andExpect(status().isMethodNotAllowed())
                 .andExpect(jsonPath("$.status").value(405));
     }
@@ -47,6 +50,7 @@ class ErrorHandlingIntegrationTest {
     @Test
     void contentTypeNaoSuportado_retorna415EmVezDe500() throws Exception {
         mockMvc.perform(post("/api/clientes")
+                        .with(csrf())
                         .contentType("text/plain")
                         .content("qualquer coisa"))
                 .andExpect(status().isUnsupportedMediaType())
@@ -56,6 +60,8 @@ class ErrorHandlingIntegrationTest {
     @Test
     void enumInvalidoNoBody_retorna400EmVezDe500() throws Exception {
         mockMvc.perform(post("/api/servicos")
+                        .with(user("test"))
+                        .with(csrf())
                         .contentType("application/json")
                         .content("{\"titulo\":\"T\",\"descricao\":\"D\",\"tipoServico\":\"NAO_EXISTE\",\"trabalhadorId\":1,\"clienteId\":1}"))
                 .andExpect(status().isBadRequest())

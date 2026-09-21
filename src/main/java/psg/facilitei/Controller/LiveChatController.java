@@ -12,6 +12,10 @@ import psg.facilitei.Repository.MensagemRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.security.Principal;
+import psg.facilitei.Security.AccessControlService;
+import psg.facilitei.Security.AuthenticatedPrincipal;
+import psg.facilitei.Exceptions.BusinessRuleException;
 
 @RestController
 @RequestMapping("/api/chat") // Endpoint REST para histórico
@@ -20,18 +24,26 @@ public class LiveChatController {
     @Autowired
     private MensagemRepository mensagemRepository;
 
+    @Autowired
+    private AccessControlService access;
+
     // 1. Endpoint para enviar mensagem via WebSocket
     // O cliente manda para: /app/chat/{servicoId}
     // O servidor distribui para quem ouve: /topics/chat/{servicoId}
     @MessageMapping("/chat/{servicoId}")
     @SendTo("/topics/chat/{servicoId}")
-    public Mensagem sendMessage(@DestinationVariable Long servicoId, ChatInput input) {
+    public Mensagem sendMessage(@DestinationVariable Long servicoId, ChatInput input, Principal principal) {
+        access.requireServiceParticipant(servicoId, principal);
+        AuthenticatedPrincipal actor = access.fromPrincipal(principal);
+        if (input.message() == null || input.message().isBlank() || input.message().length() > 2000) {
+            throw new BusinessRuleException("A mensagem deve ter entre 1 e 2000 caracteres.");
+        }
         
         // Salva no banco (Persistência)
         Mensagem msg = new Mensagem();
         msg.setServicoId(servicoId);
-        msg.setRemetente(input.user());
-        msg.setConteudo(input.message());
+        msg.setRemetente(actor.name());
+        msg.setConteudo(psg.facilitei.Util.HtmlSanitizer.sanitize(input.message()));
         msg.setTipo(input.type() != null ? input.type() : "TEXTO");
         msg.setUrlArquivo(input.fileUrl());
         msg.setDataEnvio(LocalDateTime.now());
@@ -42,6 +54,7 @@ public class LiveChatController {
     // 2. Endpoint REST para carregar histórico quando abrir a tela
     @GetMapping("/historico/{servicoId}")
     public ResponseEntity<List<Mensagem>> getHistorico(@PathVariable Long servicoId) {
+        access.requireServiceParticipant(servicoId);
         return ResponseEntity.ok(mensagemRepository.findByServicoIdOrderByDataEnvioAsc(servicoId));
     }
 }

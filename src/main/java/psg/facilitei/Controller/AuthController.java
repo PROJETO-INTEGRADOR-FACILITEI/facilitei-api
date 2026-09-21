@@ -17,6 +17,7 @@ import psg.facilitei.Services.AuthService; // Vamos criar este
 import psg.facilitei.Services.PasswordResetService;
 import jakarta.validation.Valid;
 import java.util.Map;
+import org.springframework.security.web.csrf.CsrfToken;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -42,7 +43,16 @@ public class AuthController {
         session.setMaxInactiveInterval(SESSION_TTL_SECONDS);
         session.setAttribute(SESSION_ROLE, response.getRole());
         session.setAttribute(SESSION_USER_ID, extrairId(response));
+        session.setAttribute("auth.name", extrairNome(response));
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/csrf")
+    public ResponseEntity<Map<String, String>> csrf(CsrfToken token) {
+        return ResponseEntity.ok(Map.of(
+                "headerName", token.getHeaderName(),
+                "parameterName", token.getParameterName(),
+                "token", token.getToken()));
     }
 
     @GetMapping("/session")
@@ -60,12 +70,6 @@ public class AuthController {
         HttpSession session = request.getSession(false);
         if (session != null) session.invalidate();
         return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/check-email")
-    public ResponseEntity<Map<String, Boolean>> checkEmail(@RequestParam String email) {
-        boolean exists = authService.emailExists(email);
-        return ResponseEntity.ok(Map.of("exists", exists));
     }
 
     @PostMapping("/forgot-password")
@@ -92,6 +96,12 @@ public class AuthController {
             throw new IllegalStateException("Tipo de usuário inválido na autenticação.");
         }
         return Long.valueOf(id);
+    }
+
+    private String extrairNome(LoginResponseDTO response) {
+        if (response.getUser() instanceof ClienteResponseDTO cliente) return cliente.getNome();
+        if (response.getUser() instanceof TrabalhadorResponseDTO trabalhador) return trabalhador.getNome();
+        throw new IllegalStateException("Tipo de usuário inválido na autenticação.");
     }
 
     private ResponseStatusException sessaoInvalida() {

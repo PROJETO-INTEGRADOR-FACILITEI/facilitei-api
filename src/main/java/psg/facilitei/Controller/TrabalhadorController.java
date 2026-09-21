@@ -26,6 +26,7 @@ import psg.facilitei.Entity.Enum.TipoServico;
 import psg.facilitei.Services.TrabalhadorService;
 import psg.facilitei.Exceptions.ErrorResponseDTO;
 import psg.facilitei.Exceptions.BusinessRuleException;
+import psg.facilitei.Security.AccessControlService;
 
 @RestController
 @RequestMapping("/api/trabalhadores")
@@ -37,6 +38,9 @@ public class TrabalhadorController {
 
         @Autowired
         private TrabalhadorRepository repository;
+
+        @Autowired
+        private AccessControlService access;
 
         @Operation(summary = "Cria um novo trabalhador", description = "Registra um trabalhador no sistema com os dados fornecidos.")
         @ApiResponses(value = {
@@ -83,6 +87,7 @@ public class TrabalhadorController {
         @PutMapping("/atualizar/{id}")
         public TrabalhadorResponseDTO atualizarTrabalhador(@PathVariable Long id,
                         @Valid @RequestBody TrabalhadorUpdateDTO dto) {
+                access.requireTrabalhador(id);
                 return service.atualizar(id, dto);
         }
 
@@ -94,6 +99,7 @@ public class TrabalhadorController {
         })
         @DeleteMapping("/delete/{id}")
         public ResponseEntity<Void> deletarTrabalhador(@PathVariable Long id) {
+                access.requireTrabalhador(id);
                 service.delete(id);
                 return ResponseEntity.noContent().build();
         }
@@ -110,16 +116,4 @@ public class TrabalhadorController {
                 return ResponseEntity.ok(dto);
         }
 
-        @PatchMapping("/{id}")
-        public ResponseEntity<Void> atualizarNota(@PathVariable Long id, @RequestBody Map<String, Object> updates) {
-                // Lógica rápida para atualizar apenas a nota
-                if (updates.containsKey("notaTrabalhador")) {
-                        Trabalhador t = service.buscarEntidadePorId(id);
-                        Double novaNota = Double.valueOf(updates.get("notaTrabalhador").toString());
-                        t.setNotaTrabalhador(novaNota);
-                        repository.save(t);
-                        return ResponseEntity.ok().build();
-                }
-                return ResponseEntity.badRequest().build();
-        }
 }

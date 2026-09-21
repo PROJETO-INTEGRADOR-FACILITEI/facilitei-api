@@ -21,6 +21,7 @@ public class ClienteRequestDTO {
     @Email(message = "Email inválido.")
     private String email;
     @NotBlank(message = "A senha é obrigatória.")
+    @Size(min = 12, max = 72, message = "A senha deve ter entre 12 e 72 caracteres.")
     private String senha;
     @NotNull(message = "O Endereço é obrigatorio..")
     @Valid

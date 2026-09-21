@@ -18,6 +18,7 @@ import psg.facilitei.Repository.TrabalhadorRepository;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -57,6 +58,10 @@ class ContratacaoAvaliacaoFlowIntegrationTest {
         servicoDto.setClienteId(cliente.getId());
 
         String servicoResponse = mockMvc.perform(post("/api/servicos")
+                        .with(csrf())
+                        .sessionAttr("auth.role", "trabalhador")
+                        .sessionAttr("auth.userId", trabalhador.getId())
+                        .sessionAttr("auth.name", trabalhador.getNome())
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(servicoDto)))
                 .andExpect(status().isCreated())
@@ -72,12 +77,19 @@ class ContratacaoAvaliacaoFlowIntegrationTest {
         avaliacaoDto.setComentario("Serviço excelente, super recomendo");
 
         mockMvc.perform(post("/api/avaliacoes-servico/Criar")
+                        .with(csrf())
+                        .sessionAttr("auth.role", "cliente")
+                        .sessionAttr("auth.userId", cliente.getId())
+                        .sessionAttr("auth.name", cliente.getNome())
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(avaliacaoDto)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.nota", is(5)));
 
-        mockMvc.perform(get("/api/avaliacoes-servico/" + servicoId))
+        mockMvc.perform(get("/api/avaliacoes-servico/" + servicoId)
+                        .sessionAttr("auth.role", "cliente")
+                        .sessionAttr("auth.userId", cliente.getId())
+                        .sessionAttr("auth.name", cliente.getNome()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].comentario", is("Serviço excelente, super recomendo")))
                 .andExpect(jsonPath("$[0].tipoServico", is("ELETRICISTA")));

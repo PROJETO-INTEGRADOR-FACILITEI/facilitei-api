@@ -31,6 +31,7 @@ public class TrabalhadorRequestDTO {
     private String disponibilidade;
     private Double notaTrabalhador;
     @NotBlank(message = "A senha é obrigatória.")
+    @Size(min = 12, max = 72, message = "A senha deve ter entre 12 e 72 caracteres.")
     private String senha;
     private String sobre;
     private String avatarUrl;

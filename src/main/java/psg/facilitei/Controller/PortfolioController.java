@@ -11,6 +11,7 @@ import psg.facilitei.DTO.PortfolioRequestDTO;
 import psg.facilitei.DTO.PortfolioResponseDTO;
 import psg.facilitei.Services.PortfolioService;
 import psg.facilitei.Entity.Enum.TipoServico;
+import psg.facilitei.Security.AccessControlService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -30,6 +31,9 @@ public class PortfolioController {
     @Autowired
     private PortfolioService portfolioService;
 
+    @Autowired
+    private AccessControlService access;
+
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Cria o portfolio de um trabalhador enviando as imagens para o Cloudinary", responses = {
             @ApiResponse(responseCode = "201", description = "Portfolio criado com sucesso", content = @Content(mediaType = "application/json", schema = @Schema(implementation = PortfolioResponseDTO.class))),
@@ -38,6 +42,7 @@ public class PortfolioController {
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
     public ResponseEntity<PortfolioResponseDTO> criar(@Valid @ModelAttribute PortfolioRequestDTO dto) {
+        access.requireTrabalhador(dto.getTrabalhadorId());
         PortfolioResponseDTO criado = portfolioService.criar(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(criado);
     }
@@ -72,6 +77,7 @@ public class PortfolioController {
     public ResponseEntity<PortfolioResponseDTO> adicionarImagens(@PathVariable Long id,
             @RequestParam("imagens") List<MultipartFile> imagens,
             @RequestParam("tipoServico") TipoServico tipoServico) {
+        access.requirePortfolioOwner(id);
         return ResponseEntity.ok(portfolioService.adicionarImagens(id, imagens, tipoServico));
     }
 
@@ -81,6 +87,7 @@ public class PortfolioController {
             @ApiResponse(responseCode = "404", description = "Portfolio ou imagem não encontrado")
     })
     public ResponseEntity<Void> removerImagem(@PathVariable Long portfolioId, @PathVariable Long imagemId) {
+        access.requirePortfolioOwner(portfolioId);
         portfolioService.removerImagem(portfolioId, imagemId);
         return ResponseEntity.noContent().build();
     }
@@ -92,6 +99,7 @@ public class PortfolioController {
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
+        access.requirePortfolioOwner(id);
         portfolioService.deletar(id);
         return ResponseEntity.noContent().build();
     }

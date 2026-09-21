@@ -130,21 +130,9 @@ public class ServicoService {
         Servico existente = servicoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Serviço não encontrado para atualização."));
 
-        modelMapper.map(dto, existente);
         existente.setTitulo(HtmlSanitizer.sanitize(dto.getTitulo()));
         existente.setDescricao(HtmlSanitizer.sanitize(dto.getDescricao()));
-
-        if (dto.getTrabalhadorId() != null && !existente.getTrabalhador().getId().equals(dto.getTrabalhadorId())) {
-            Trabalhador novoTrabalhador = trabalhadorService.buscarEntidadePorId(dto.getTrabalhadorId());
-            existente.setTrabalhador(novoTrabalhador);
-        }
-
-        if (dto.getClienteId() != null && !existente.getCliente().getId().equals(dto.getClienteId())) {
-            Cliente novoCliente = clienteRepository.findById(dto.getClienteId())
-                    .orElseThrow(() -> new ResourceNotFoundException(
-                            "Cliente não encontrado com ID: " + dto.getClienteId()));
-            existente.setCliente(novoCliente);
-        }
+        existente.setStatusServico(dto.getStatusServico());
 
         Servico atualizado = servicoRepository.save(existente);
         return modelMapper.map(atualizado, ServicoResponseDTO.class);

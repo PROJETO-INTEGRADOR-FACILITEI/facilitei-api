@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.*;
 import psg.facilitei.DTO.ServicoRequestDTO;
 import psg.facilitei.DTO.ServicoResponseDTO;
 import psg.facilitei.Services.ServicoService;
+import psg.facilitei.Security.AccessControlService;
+import psg.facilitei.Security.AuthenticatedPrincipal;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -28,6 +30,9 @@ public class ServicoController {
     @Autowired
     private ServicoService servicoService;
 
+    @Autowired
+    private AccessControlService access;
+
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Busca um serviço por ID", responses = {
             @ApiResponse(responseCode = "200", description = "Serviço encontrado com sucesso", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ServicoResponseDTO.class))),
@@ -35,6 +40,7 @@ public class ServicoController {
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
     public ResponseEntity<ServicoResponseDTO> buscarPorId(@PathVariable Long id) {
+        access.requireServiceParticipant(id);
         ServicoResponseDTO servico = servicoService.buscarPorId(id);
         return ResponseEntity.ok(servico);
     }
@@ -46,6 +52,8 @@ public class ServicoController {
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
     public ResponseEntity<ServicoResponseDTO> criar(@Valid @RequestBody ServicoRequestDTO dto) {
+        access.requireTrabalhador(dto.getTrabalhadorId());
+        if (dto.getSolicitacaoId() != null) access.requireSolicitationWorker(dto.getSolicitacaoId());
         ServicoResponseDTO criado = servicoService.criar(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(criado);
     }
@@ -59,6 +67,7 @@ public class ServicoController {
     })
     public ResponseEntity<ServicoResponseDTO> atualizar(@PathVariable Long id,
             @Valid @RequestBody ServicoRequestDTO dto) {
+        access.requireServiceStatusChange(id, dto.getStatusServico());
         ServicoResponseDTO atualizado = servicoService.atualizar(id, dto);
         return ResponseEntity.ok(atualizado);
     }
@@ -70,12 +79,14 @@ public class ServicoController {
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
+        access.requireServiceClient(id);
         servicoService.deletar(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/por-cliente/{clienteId}")
     public ResponseEntity<List<ServicoResponseDTO>> listarPorCliente(@PathVariable Long clienteId) {
+        access.requireCliente(clienteId);
         List<ServicoResponseDTO> servicos = servicoService.listarPorCliente(clienteId);
         return ResponseEntity.ok(servicos);
     }
@@ -85,14 +96,16 @@ public class ServicoController {
             @RequestParam(required = false) Long trabalhadorId,
             @RequestParam(required = false) Long clienteId) {
 
+        AuthenticatedPrincipal actor = access.current();
         List<ServicoResponseDTO> lista;
-
-        if (trabalhadorId != null) {
-            lista = servicoService.listarPorTrabalhador(trabalhadorId);
-        } else if (clienteId != null) {
-            lista = servicoService.listarPorCliente(clienteId);
+        if (actor.isTrabalhador()) {
+            Long id = trabalhadorId == null ? actor.id() : trabalhadorId;
+            access.requireTrabalhador(id);
+            lista = servicoService.listarPorTrabalhador(id);
         } else {
-            lista = servicoService.listarTodos();
+            Long id = clienteId == null ? actor.id() : clienteId;
+            access.requireCliente(id);
+            lista = servicoService.listarPorCliente(id);
         }
         return ResponseEntity.ok(lista);
     }

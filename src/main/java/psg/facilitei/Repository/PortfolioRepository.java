@@ -13,4 +13,6 @@ public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
     Optional<Portfolio> findByTrabalhadorId(Long trabalhadorId);
 
     boolean existsByTrabalhadorId(Long trabalhadorId);
+
+    boolean existsByIdAndTrabalhadorId(Long id, Long trabalhadorId);
 }

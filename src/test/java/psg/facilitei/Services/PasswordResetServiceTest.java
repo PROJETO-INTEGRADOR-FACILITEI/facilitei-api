@@ -34,6 +34,8 @@ class PasswordResetServiceTest {
     private PasswordResetTokenRepository passwordResetTokenRepository;
     @Mock
     private EmailService emailService;
+    @Mock
+    private PasswordHashService passwordHashService;
 
     @InjectMocks
     private PasswordResetService passwordResetService;
@@ -86,10 +88,11 @@ class PasswordResetServiceTest {
 
         when(passwordResetTokenRepository.findByToken("abc123")).thenReturn(Optional.of(token));
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(passwordHashService.hash("senhaNova")).thenReturn("$2a$hash");
 
         passwordResetService.redefinirSenha("abc123", "senhaNova");
 
-        assertEquals("senhaNova", usuario.getSenha());
+        assertEquals("$2a$hash", usuario.getSenha());
         assertTrue(token.isUsado());
         verify(usuarioRepository).save(usuario);
         verify(passwordResetTokenRepository).save(token);

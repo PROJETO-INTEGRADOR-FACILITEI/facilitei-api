@@ -10,6 +10,9 @@ import org.springframework.http.ResponseEntity;
 import psg.facilitei.Controller.domain.ChatInput;
 import psg.facilitei.Entity.Mensagem;
 import psg.facilitei.Repository.MensagemRepository;
+import psg.facilitei.Security.AccessControlService;
+import psg.facilitei.Security.AuthenticatedPrincipal;
+import java.security.Principal;
 
 import java.util.List;
 
@@ -24,6 +27,9 @@ class LiveChatControllerTest {
     @Mock
     private MensagemRepository mensagemRepository;
 
+    @Mock
+    private AccessControlService access;
+
     @InjectMocks
     private LiveChatController liveChatController;
 
@@ -33,7 +39,10 @@ class LiveChatControllerTest {
 
         when(mensagemRepository.save(any(Mensagem.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Mensagem result = liveChatController.sendMessage(42L, input);
+        Principal principal = () -> "cliente1";
+        when(access.fromPrincipal(principal))
+                .thenReturn(new AuthenticatedPrincipal(1L, "cliente", "cliente1"));
+        Mensagem result = liveChatController.sendMessage(42L, input, principal);
 
         ArgumentCaptor<Mensagem> captor = ArgumentCaptor.forClass(Mensagem.class);
         verify(mensagemRepository).save(captor.capture());
