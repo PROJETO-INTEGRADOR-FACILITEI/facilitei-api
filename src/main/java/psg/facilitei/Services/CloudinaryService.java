@@ -20,8 +20,11 @@ public class CloudinaryService {
     private Cloudinary cloudinary;
 
     public String uploadArquivo(MultipartFile file) {
+        validarImagem(file);
         try {
-            Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.emptyMap());
+            Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
+                    "folder", "facilitei/uploads",
+                    "resource_type", "image"));
 
             return (String) uploadResult.get("secure_url");
         } catch (IOException e) {
@@ -67,6 +70,9 @@ public class CloudinaryService {
         String contentType = file.getContentType();
         if (contentType == null || !contentType.startsWith("image/")) {
             throw new BusinessRuleException("O arquivo enviado precisa ser uma imagem.");
+        }
+        if (file.getSize() > 10L * 1024 * 1024) {
+            throw new BusinessRuleException("A imagem deve ter no máximo 10 MB.");
         }
     }
 }
