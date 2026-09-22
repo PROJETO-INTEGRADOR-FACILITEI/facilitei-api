@@ -12,6 +12,7 @@ import psg.facilitei.Entity.Cliente;
 import psg.facilitei.Entity.Trabalhador;
 import psg.facilitei.Repository.ClienteRepository;
 import psg.facilitei.Repository.TrabalhadorRepository;
+import psg.facilitei.Security.AdminAccessService;
 
 import java.util.Optional;
 
@@ -30,6 +31,9 @@ public class AuthService {
     @Autowired
     private PasswordHashService passwordHashService;
 
+    @Autowired
+    private AdminAccessService adminAccess;
+
     public LoginResponseDTO login(String email, String senha) {
         Optional<Cliente> clienteOpt = clienteRepository.findByEmail(email);
         if (clienteOpt.isPresent()) {
@@ -40,7 +44,7 @@ public class AuthService {
                     clienteRepository.save(cliente);
                 }
                 ClienteResponseDTO dto = modelMapper.map(cliente, ClienteResponseDTO.class);
-                return new LoginResponseDTO("cliente", dto);
+                return new LoginResponseDTO("cliente", dto, adminAccess.isAdminEmail(cliente.getEmail()));
             }
         }
 
@@ -53,7 +57,8 @@ public class AuthService {
                     trabalhadorRepository.save(trabalhador);
                 }
                 TrabalhadorResponseDTO dto = modelMapper.map(trabalhador, TrabalhadorResponseDTO.class);
-                return new LoginResponseDTO("trabalhador", dto);
+                return new LoginResponseDTO(
+                        "trabalhador", dto, adminAccess.isAdminEmail(trabalhador.getEmail()));
             }
         }
 
@@ -69,13 +74,16 @@ public class AuthService {
         if ("cliente".equals(role)) {
             Cliente cliente = clienteRepository.findById(userId)
                     .orElseThrow(this::sessaoInvalida);
-            return new LoginResponseDTO("cliente", modelMapper.map(cliente, ClienteResponseDTO.class));
+            return new LoginResponseDTO(
+                    "cliente", modelMapper.map(cliente, ClienteResponseDTO.class),
+                    adminAccess.isAdminEmail(cliente.getEmail()));
         }
         if ("trabalhador".equals(role)) {
             Trabalhador trabalhador = trabalhadorRepository.findById(userId)
                     .orElseThrow(this::sessaoInvalida);
             return new LoginResponseDTO(
-                    "trabalhador", modelMapper.map(trabalhador, TrabalhadorResponseDTO.class));
+                    "trabalhador", modelMapper.map(trabalhador, TrabalhadorResponseDTO.class),
+                    adminAccess.isAdminEmail(trabalhador.getEmail()));
         }
         throw sessaoInvalida();
     }

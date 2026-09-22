@@ -35,6 +35,8 @@ class SolicitacaoServicoServiceTest {
     private TrabalhadorRepository trabalhadorRepository;
     @Mock
     private ModelMapper modelMapper;
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private SolicitacaoServicoService solicitacaoServicoService;

@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.*;
 import psg.facilitei.Controller.domain.ChatInput;
 import psg.facilitei.Entity.Mensagem;
 import psg.facilitei.Repository.MensagemRepository;
+import psg.facilitei.Repository.ServicoRepository;
+import psg.facilitei.Services.NotificationService;
+import psg.facilitei.Entity.Enum.NotificationType;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,6 +29,12 @@ public class LiveChatController {
 
     @Autowired
     private AccessControlService access;
+
+    @Autowired
+    private ServicoRepository servicoRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
     // 1. Endpoint para enviar mensagem via WebSocket
     // O cliente manda para: /app/chat/{servicoId}
@@ -48,7 +57,18 @@ public class LiveChatController {
         msg.setUrlArquivo(input.fileUrl());
         msg.setDataEnvio(LocalDateTime.now());
         
-        return mensagemRepository.save(msg);
+        Mensagem saved = mensagemRepository.save(msg);
+        var servico = servicoRepository.findById(servicoId).orElseThrow();
+        Long recipientId = actor.isCliente()
+                ? servico.getTrabalhador().getId()
+                : servico.getCliente().getId();
+        String preview = "IMAGEM".equalsIgnoreCase(saved.getTipo())
+                ? actor.name() + " enviou uma imagem."
+                : actor.name() + ": " + saved.getConteudo();
+        notificationService.notify(
+                recipientId, NotificationType.NEW_MESSAGE,
+                "Nova mensagem", preview, "/painel/chat/" + servicoId);
+        return saved;
     }
 
     // 2. Endpoint REST para carregar histórico quando abrir a tela
