@@ -41,6 +41,26 @@ class SecurityIntegrationTest {
     }
 
     @Test
+    void usuarioComumNaoPodeAcessarPainelAdministrativo() throws Exception {
+        mockMvc.perform(get("/api/admin/support/metrics")
+                        .sessionAttr("auth.role", "cliente")
+                        .sessionAttr("auth.userId", 7L)
+                        .sessionAttr("auth.name", "Cliente")
+                        .sessionAttr("auth.admin", false))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void administradorPodeAcessarMetricasDeSuporte() throws Exception {
+        mockMvc.perform(get("/api/admin/support/metrics")
+                        .sessionAttr("auth.role", "cliente")
+                        .sessionAttr("auth.userId", 7L)
+                        .sessionAttr("auth.name", "Admin")
+                        .sessionAttr("auth.admin", true))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void mutacaoPublicaSemCsrfRetorna403() throws Exception {
         mockMvc.perform(post("/api/clientes")
                         .contentType("application/json")

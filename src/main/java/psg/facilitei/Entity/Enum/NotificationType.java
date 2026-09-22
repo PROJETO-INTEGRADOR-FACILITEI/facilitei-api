@@ -7,5 +7,7 @@ public enum NotificationType {
     STATUS_CHANGED,
     APPROVAL_REQUIRED,
     NEW_MESSAGE,
+    NEW_SUPPORT_CASE,
+    SUPPORT_UPDATE,
     SYSTEM
 }

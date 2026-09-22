@@ -25,6 +25,7 @@ public class AuthController {
 
     private static final String SESSION_ROLE = "auth.role";
     private static final String SESSION_USER_ID = "auth.userId";
+    private static final String SESSION_ADMIN = "auth.admin";
     private static final int SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;
 
     @Autowired
@@ -44,6 +45,7 @@ public class AuthController {
         session.setAttribute(SESSION_ROLE, response.getRole());
         session.setAttribute(SESSION_USER_ID, extrairId(response));
         session.setAttribute("auth.name", extrairNome(response));
+        session.setAttribute(SESSION_ADMIN, response.isAdmin());
         return ResponseEntity.ok(response);
     }
 
@@ -62,7 +64,9 @@ public class AuthController {
         Object role = session.getAttribute(SESSION_ROLE);
         Object userId = session.getAttribute(SESSION_USER_ID);
         if (!(role instanceof String) || !(userId instanceof Long)) throw sessaoInvalida();
-        return ResponseEntity.ok(authService.restaurarSessao((String) role, (Long) userId));
+        LoginResponseDTO response = authService.restaurarSessao((String) role, (Long) userId);
+        session.setAttribute(SESSION_ADMIN, response.isAdmin());
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/logout")

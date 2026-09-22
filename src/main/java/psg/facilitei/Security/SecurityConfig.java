@@ -47,6 +47,7 @@ public class SecurityConfig {
                                 "/api/trabalhadores",
                                 "/api/arquivos/upload",
                                 "/api/assinaturas/prestador/webhook").permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(errors -> errors

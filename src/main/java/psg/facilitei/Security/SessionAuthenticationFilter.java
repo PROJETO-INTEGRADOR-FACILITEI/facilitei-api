@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.List;
+import java.util.ArrayList;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,13 +24,18 @@ public class SessionAuthenticationFilter extends OncePerRequestFilter {
             Object roleValue = session.getAttribute("auth.role");
             Object idValue = session.getAttribute("auth.userId");
             Object nameValue = session.getAttribute("auth.name");
+            Object adminValue = session.getAttribute("auth.admin");
             if (roleValue instanceof String role && idValue instanceof Long id
                     && ("cliente".equals(role) || "trabalhador".equals(role))) {
                 AuthenticatedPrincipal principal = new AuthenticatedPrincipal(
                         id, role, nameValue instanceof String name ? name : role + "#" + id);
+                List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()));
+                if (Boolean.TRUE.equals(adminValue)) {
+                    authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+                }
                 var authentication = UsernamePasswordAuthenticationToken.authenticated(
-                        principal, null,
-                        List.of(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase())));
+                        principal, null, authorities);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         }
