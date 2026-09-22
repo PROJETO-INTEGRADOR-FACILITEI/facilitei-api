@@ -50,6 +50,8 @@ class ServicoServiceTest {
     private AvaliacaoServicoRepository avaliacaoServicoRepository;
     @Mock
     private SolicitacaoServicoRepository solicitacaoServicoRepository;
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private ServicoService servicoService;

@@ -12,6 +12,7 @@ import psg.facilitei.Entity.Cliente;
 import psg.facilitei.Entity.SolicitacaoServico;
 import psg.facilitei.Entity.Trabalhador;
 import psg.facilitei.Entity.Enum.StatusSolicitacao;
+import psg.facilitei.Entity.Enum.NotificationType;
 import psg.facilitei.Exceptions.ResourceNotFoundException;
 import psg.facilitei.Repository.SolicitacaoServicoRepository;
 import psg.facilitei.Repository.TrabalhadorRepository;
@@ -44,6 +45,9 @@ public class SolicitacaoServicoService {
     @Autowired
     private ModelMapper modelMapper;
 
+    @Autowired
+    private NotificationService notificationService;
+
     @Transactional
     public SolicitacaoServicoResponseDTO criar(SolicitacaoServicoRequestDTO dto) {
         SolicitacaoServico solicitacao = new SolicitacaoServico();
@@ -73,6 +77,11 @@ public class SolicitacaoServicoService {
         solicitacao.setStatusSolicitacao(StatusSolicitacao.PENDENTE);
 
         SolicitacaoServico salvo = solicitacaoServicoRepository.save(solicitacao);
+        notificationService.notify(
+                trabalhador.getId(), NotificationType.NEW_REQUEST,
+                "Nova solicitação de serviço",
+                cliente.getNome() + " precisa de " + formatarTipo(solicitacao.getTipoServico().name()) + ".",
+                "/painel");
         
         // Mapeamento manual para garantir retorno correto dos IDs
         return mapToResponse(salvo);
@@ -119,7 +128,14 @@ public class SolicitacaoServicoService {
         existente.setStatusSolicitacao(StatusSolicitacao.RECUSADA);
         // Adicione outras atualizações conforme necessário
 
-        return mapToResponse(solicitacaoServicoRepository.save(existente));
+        SolicitacaoServico atualizada = solicitacaoServicoRepository.save(existente);
+        notificationService.notify(
+                existente.getCliente().getId(), NotificationType.REQUEST_DECLINED,
+                "Solicitação não aceita",
+                existente.getTrabalhador().getNome() + " não pôde aceitar seu pedido de "
+                        + formatarTipo(existente.getTipoServico().name()) + ".",
+                "/painel");
+        return mapToResponse(atualizada);
     }
     
     @Transactional
@@ -141,5 +157,9 @@ public class SolicitacaoServicoService {
             entity.getDescricao(),
             entity.getStatusSolicitacao().name()
         );
+    }
+
+    private String formatarTipo(String value) {
+        return value.toLowerCase().replace('_', ' ');
     }
 }

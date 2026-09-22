@@ -13,6 +13,7 @@ import psg.facilitei.Entity.SolicitacaoServico;
 import psg.facilitei.Entity.Trabalhador;
 import psg.facilitei.Entity.Enum.StatusSolicitacao;
 import psg.facilitei.Entity.Enum.StatusServico;
+import psg.facilitei.Entity.Enum.NotificationType;
 import psg.facilitei.Exceptions.BusinessRuleException;
 import psg.facilitei.Exceptions.ResourceNotFoundException;
 import psg.facilitei.Repository.AvaliacaoServicoRepository;
@@ -48,6 +49,9 @@ public class ServicoService {
 
     @Autowired
     private AssinaturaPrestadorRepository assinaturaPrestadorRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @Value("${abacatepay.product-id:}")
     private String monthlyProductId;
@@ -111,6 +115,12 @@ public class ServicoService {
             solicitacaoServicoRepository.save(solicitacao);
         }
 
+        notificationService.notify(
+                cliente.getId(), NotificationType.REQUEST_ACCEPTED,
+                "Seu pedido foi aceito",
+                trabalhador.getNome() + " aceitou seu pedido. Agora vocês já podem conversar.",
+                "/painel/chat/" + salvo.getId());
+
         return modelMapper.map(salvo, ServicoResponseDTO.class);
     }
 
@@ -130,12 +140,39 @@ public class ServicoService {
         Servico existente = servicoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Serviço não encontrado para atualização."));
 
+        StatusServico previousStatus = existente.getStatusServico();
         existente.setTitulo(HtmlSanitizer.sanitize(dto.getTitulo()));
         existente.setDescricao(HtmlSanitizer.sanitize(dto.getDescricao()));
         existente.setStatusServico(dto.getStatusServico());
 
         Servico atualizado = servicoRepository.save(existente);
+        if (previousStatus != atualizado.getStatusServico()) {
+            notifyStatusChange(atualizado, previousStatus);
+        }
         return modelMapper.map(atualizado, ServicoResponseDTO.class);
+    }
+
+    private void notifyStatusChange(Servico servico, StatusServico previousStatus) {
+        if (servico.getStatusServico() == StatusServico.PENDENTE_APROVACAO) {
+            notificationService.notify(
+                    servico.getCliente().getId(), NotificationType.APPROVAL_REQUIRED,
+                    "Serviço aguardando sua aprovação",
+                    servico.getTrabalhador().getNome() + " informou que “" + servico.getTitulo() + "” foi concluído.",
+                    "/painel");
+        } else if (servico.getStatusServico() == StatusServico.FINALIZADO) {
+            notificationService.notify(
+                    servico.getTrabalhador().getId(), NotificationType.STATUS_CHANGED,
+                    "Serviço aprovado",
+                    servico.getCliente().getNome() + " aprovou a conclusão de “" + servico.getTitulo() + "”.",
+                    "/painel");
+        } else if (previousStatus == StatusServico.PENDENTE_APROVACAO
+                && servico.getStatusServico() == StatusServico.EM_ANDAMENTO) {
+            notificationService.notify(
+                    servico.getTrabalhador().getId(), NotificationType.STATUS_CHANGED,
+                    "Cliente pediu ajustes",
+                    servico.getCliente().getNome() + " contestou a conclusão de “" + servico.getTitulo() + "”.",
+                    "/painel/chat/" + servico.getId());
+        }
     }
 
     @Transactional
