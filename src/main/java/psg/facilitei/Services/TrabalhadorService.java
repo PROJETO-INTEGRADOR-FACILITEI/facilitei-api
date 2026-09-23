@@ -49,8 +49,10 @@ public class TrabalhadorService {
 
     @Autowired
     private TrabalhadorRepository repository;
-    @Value("${abacatepay.product-id:}")
-    private String monthlyProductId;
+    @Value("${mercadopago.monthly-amount-cents:0}")
+    private long monthlyAmountCents;
+    @Value("${mercadopago.access-token:}")
+    private String mercadoPagoAccessToken;
     @Autowired
     private ServicoRepository servicoRepository;
     @Autowired
@@ -125,7 +127,9 @@ public class TrabalhadorService {
 
     private Predicate filtroAssinatura(Root<Trabalhador> root, CriteriaQuery<?> query,
                                       CriteriaBuilder cb) {
-        if (monthlyProductId == null || monthlyProductId.isBlank()) return cb.conjunction();
+        if (monthlyAmountCents <= 0 || mercadoPagoAccessToken == null || mercadoPagoAccessToken.isBlank()) {
+            return cb.conjunction();
+        }
         Subquery<Long> assinaturasAtivas = query.subquery(Long.class);
         Root<AssinaturaPrestador> assinatura = assinaturasAtivas.from(AssinaturaPrestador.class);
         assinaturasAtivas.select(assinatura.get("id")).where(

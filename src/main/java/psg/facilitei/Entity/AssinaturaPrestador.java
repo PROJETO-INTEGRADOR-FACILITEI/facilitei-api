@@ -18,6 +18,9 @@ public class AssinaturaPrestador {
     @JoinColumn(name = "trabalhador_id", nullable = false, unique = true)
     private Trabalhador trabalhador;
 
+    @Column(name = "provider", nullable = false, length = 30)
+    private String provider = "MERCADOPAGO";
+
     @Column(name = "checkout_id", unique = true, length = 100)
     private String checkoutId;
 
@@ -48,6 +51,8 @@ public class AssinaturaPrestador {
     public Long getId() { return id; }
     public Trabalhador getTrabalhador() { return trabalhador; }
     public void setTrabalhador(Trabalhador trabalhador) { this.trabalhador = trabalhador; }
+    public String getProvider() { return provider; }
+    public void setProvider(String provider) { this.provider = provider; }
     public String getCheckoutId() { return checkoutId; }
     public void setCheckoutId(String checkoutId) { this.checkoutId = checkoutId; }
     public String getCheckoutUrl() { return checkoutUrl; }

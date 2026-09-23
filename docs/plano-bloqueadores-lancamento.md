@@ -8,16 +8,16 @@ portfólios ou conversas entre usuários.
 ## Fase 0 — ação externa imediata
 
 - [ ] Revogar a credencial antiga do Cloudinary no painel do provedor.
-- [ ] Criar uma credencial nova com o menor privilégio possível.
-- [ ] Configurar `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` e
-  `CLOUDINARY_API_SECRET` somente no ambiente de execução.
+- [ ] Criar uma credencial AWS nova com o menor privilégio possível.
+- [ ] Configurar `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_BUCKET`
+  e `AWS_REGION` somente no ambiente de execução.
 - [ ] Invalidar caches e credenciais de ambientes que usavam a chave antiga.
 - [ ] Decidir, com a equipe, uma janela para reescrever o histórico Git. Essa
   operação exige `force push` coordenado e não deve ser feita automaticamente.
 
 ## Fase 1 — credenciais e autenticação
 
-- [x] Remover valores do Cloudinary do código e fornecer `.env.example`.
+- [x] Remover valores do Cloudinary do código e migrar uploads para AWS S3.
 - [x] Gravar novas senhas com BCrypt (custo 12).
 - [x] Migrar senhas legadas para BCrypt na inicialização, mantendo o login
   como segunda proteção idempotente.
@@ -58,7 +58,7 @@ portfólios ou conversas entre usuários.
 - Todos os testes automatizados devem passar.
 - Frontend deve passar em lint e build de produção.
 - Testes negativos devem confirmar que usuário A não lê nem altera dados de B.
-- Checkout e webhook devem ser validados no sandbox da AbacatePay.
+- Checkout recorrente e webhook devem ser validados com credenciais de teste do Mercado Pago.
 - Cookies devem usar `Secure=true` em produção e todo o tráfego deve usar HTTPS.
 - A chave antiga do Cloudinary deve estar revogada, não apenas removida do código.
 

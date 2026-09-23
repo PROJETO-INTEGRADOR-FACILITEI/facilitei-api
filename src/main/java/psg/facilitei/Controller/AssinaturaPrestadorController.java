@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import psg.facilitei.DTO.AssinaturaPrestadorResponseDTO;
 import psg.facilitei.Entity.Trabalhador;
-import psg.facilitei.Services.AbacatePayWebhookVerifier;
+import psg.facilitei.Services.MercadoPagoWebhookVerifier;
 import psg.facilitei.Services.AssinaturaPrestadorService;
 import psg.facilitei.Services.TrabalhadorService;
 import psg.facilitei.Security.AccessControlService;
@@ -21,13 +21,13 @@ public class AssinaturaPrestadorController {
     private final AccessControlService access;
     private final TrabalhadorService trabalhadores;
     private final AssinaturaPrestadorService assinaturas;
-    private final AbacatePayWebhookVerifier verifier;
+    private final MercadoPagoWebhookVerifier verifier;
     private final ObjectMapper objectMapper;
 
     public AssinaturaPrestadorController(AccessControlService access,
                                         TrabalhadorService trabalhadores,
                                         AssinaturaPrestadorService assinaturas,
-                                        AbacatePayWebhookVerifier verifier,
+                                        MercadoPagoWebhookVerifier verifier,
                                         ObjectMapper objectMapper) {
         this.access = access;
         this.trabalhadores = trabalhadores;
@@ -54,13 +54,15 @@ public class AssinaturaPrestadorController {
     }
 
     @PostMapping("/webhook")
-    public ResponseEntity<Void> webhook(@RequestParam(value = "webhookSecret", required = false) String secret,
-                                        @RequestHeader(value = "X-Webhook-Signature", required = false) String signature,
+    public ResponseEntity<Void> webhook(@RequestParam(value = "data.id") String dataId,
+                                        @RequestParam(value = "type") String type,
+                                        @RequestHeader(value = "X-Signature", required = false) String signature,
+                                        @RequestHeader(value = "X-Request-Id", required = false) String requestId,
                                         @RequestBody byte[] rawBody) {
-        verifier.verify(secret, signature, rawBody);
+        verifier.verify(signature, requestId, dataId);
         try {
             JsonNode payload = objectMapper.readTree(rawBody);
-            assinaturas.aplicarEvento(payload);
+            assinaturas.aplicarEvento(payload.path("id").asText(), type, dataId);
         } catch (IOException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "JSON do webhook inválido.");
         }

@@ -7,7 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import psg.facilitei.Services.AbacatePayWebhookVerifier;
+import psg.facilitei.Services.MercadoPagoWebhookVerifier;
 import psg.facilitei.Services.AssinaturaPrestadorService;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class SecurityIntegrationTest {
     @Autowired MockMvc mockMvc;
 
-    @MockBean AbacatePayWebhookVerifier webhookVerifier;
+    @MockBean MercadoPagoWebhookVerifier webhookVerifier;
     @MockBean AssinaturaPrestadorService assinaturaService;
 
     @Test
@@ -80,8 +80,12 @@ class SecurityIntegrationTest {
     @Test
     void webhookAssinadoNaoDependeDeCookieCsrf() throws Exception {
         mockMvc.perform(post("/api/assinaturas/prestador/webhook")
+                        .param("data.id", "payment-123")
+                        .param("type", "subscription_authorized_payment")
+                        .header("X-Signature", "ts=1700000000,v1=assinatura")
+                        .header("X-Request-Id", "request-123")
                         .contentType("application/json")
-                        .content("{}"))
+                        .content("{\"id\":\"notification-123\"}"))
                 .andExpect(status().isOk());
     }
 }

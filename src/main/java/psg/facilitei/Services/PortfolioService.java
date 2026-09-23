@@ -29,7 +29,7 @@ public class PortfolioService {
     private TrabalhadorService trabalhadorService;
 
     @Autowired
-    private CloudinaryService cloudinaryService;
+    private StorageService storageService;
 
     @Transactional
     public PortfolioResponseDTO criar(PortfolioRequestDTO dto) {
@@ -82,7 +82,7 @@ public class PortfolioService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Imagem não encontrada neste portfolio com ID: " + imagemId));
 
-        cloudinaryService.removerImagem(imagem.getPublicId());
+        storageService.delete(imagem.getPublicId());
         portfolio.removerImagem(imagem);
         portfolioRepository.save(portfolio);
     }
@@ -90,7 +90,7 @@ public class PortfolioService {
     @Transactional
     public void deletar(Long id) {
         Portfolio portfolio = buscarEntidadePorId(id);
-        portfolio.getImagens().forEach(imagem -> cloudinaryService.removerImagem(imagem.getPublicId()));
+        portfolio.getImagens().forEach(imagem -> storageService.delete(imagem.getPublicId()));
         portfolioRepository.deleteById(id);
     }
 
@@ -102,10 +102,10 @@ public class PortfolioService {
         List<PortfolioImagem> imagensEnviadas = new ArrayList<>();
         try {
             for (MultipartFile arquivo : imagens) {
-                CloudinaryService.UploadImagemResult upload = cloudinaryService.uploadImagemPortfolio(arquivo);
+                StorageService.StoredObject upload = storageService.uploadImage(arquivo, "facilitei/portfolios");
                 PortfolioImagem imagem = new PortfolioImagem();
                 imagem.setUrl(upload.url());
-                imagem.setPublicId(upload.publicId());
+                imagem.setPublicId(upload.key());
                 imagem.setTipoServico(tipoServico);
                 portfolio.adicionarImagem(imagem);
                 imagensEnviadas.add(imagem);
@@ -113,7 +113,7 @@ public class PortfolioService {
         } catch (RuntimeException exception) {
             imagensEnviadas.forEach(imagem -> {
                 try {
-                    cloudinaryService.removerImagem(imagem.getPublicId());
+                    storageService.delete(imagem.getPublicId());
                 } catch (RuntimeException ignored) {
                     // Preserva a falha original do upload.
                 }

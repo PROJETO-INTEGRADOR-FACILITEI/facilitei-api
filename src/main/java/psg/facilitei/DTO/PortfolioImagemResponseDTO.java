@@ -15,7 +15,7 @@ public class PortfolioImagemResponseDTO {
     @Schema(description = "ID da imagem", example = "10")
     private Long id;
 
-    @Schema(description = "URL segura da imagem no Cloudinary")
+    @Schema(description = "URL pública da imagem armazenada no S3")
     private String url;
 
     @Schema(description = "Especialidade usada para agrupar a imagem", example = "ELETRICISTA")

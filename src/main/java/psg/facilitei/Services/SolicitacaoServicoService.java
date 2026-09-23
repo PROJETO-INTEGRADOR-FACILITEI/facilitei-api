@@ -39,8 +39,10 @@ public class SolicitacaoServicoService {
     @Autowired
     private AssinaturaPrestadorRepository assinaturaPrestadorRepository;
 
-    @Value("${abacatepay.product-id:}")
-    private String monthlyProductId;
+    @Value("${mercadopago.monthly-amount-cents:0}")
+    private long monthlyAmountCents;
+    @Value("${mercadopago.access-token:}")
+    private String mercadoPagoAccessToken;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -59,7 +61,7 @@ public class SolicitacaoServicoService {
         // 2. Busca e define o Trabalhador (Obrigatório nesta etapa)
         Trabalhador trabalhador = trabalhadorRepository.findById(dto.getTrabalhadorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Trabalhador não encontrado com ID: " + dto.getTrabalhadorId()));
-        if (monthlyProductId != null && !monthlyProductId.isBlank()
+        if (monthlyAmountCents > 0 && mercadoPagoAccessToken != null && !mercadoPagoAccessToken.isBlank()
                 && !assinaturaPrestadorRepository.existsByTrabalhadorIdAndStatusAndActiveUntilAfter(
                         trabalhador.getId(), "ACTIVE", java.time.Instant.now())) {
             throw new BusinessRuleException("Este profissional precisa de uma assinatura mensal ativa.");

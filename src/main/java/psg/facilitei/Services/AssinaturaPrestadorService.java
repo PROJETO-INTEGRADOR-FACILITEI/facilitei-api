@@ -1,8 +1,11 @@
 package psg.facilitei.Services;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.Set;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -10,30 +13,30 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import psg.facilitei.DTO.AssinaturaPrestadorResponseDTO;
 import psg.facilitei.Entity.AssinaturaPrestador;
-import psg.facilitei.Entity.EventoAbacatePay;
+import psg.facilitei.Entity.EventoPagamento;
 import psg.facilitei.Entity.Trabalhador;
 import psg.facilitei.Repository.AssinaturaPrestadorRepository;
-import psg.facilitei.Repository.EventoAbacatePayRepository;
+import psg.facilitei.Repository.EventoPagamentoRepository;
 import psg.facilitei.Repository.TrabalhadorRepository;
 
 @Service
 public class AssinaturaPrestadorService {
-    private static final Set<String> EVENTS = Set.of(
-            "subscription.completed", "subscription.renewed",
-            "subscription.payment_failed", "subscription.cancelled");
+    private static final String PROVIDER = "MERCADOPAGO";
+    private static final Set<String> SUPPORTED_TOPICS = Set.of(
+            "subscription_preapproval", "subscription_authorized_payment");
 
     private final AssinaturaPrestadorRepository assinaturas;
-    private final EventoAbacatePayRepository eventos;
-    private final AbacatePayClient abacatePay;
+    private final EventoPagamentoRepository eventos;
+    private final MercadoPagoClient mercadoPago;
     private final TrabalhadorRepository trabalhadores;
 
     public AssinaturaPrestadorService(AssinaturaPrestadorRepository assinaturas,
-                                     EventoAbacatePayRepository eventos,
-                                     AbacatePayClient abacatePay,
-                                     TrabalhadorRepository trabalhadores) {
+                                      EventoPagamentoRepository eventos,
+                                      MercadoPagoClient mercadoPago,
+                                      TrabalhadorRepository trabalhadores) {
         this.assinaturas = assinaturas;
         this.eventos = eventos;
-        this.abacatePay = abacatePay;
+        this.mercadoPago = mercadoPago;
         this.trabalhadores = trabalhadores;
     }
 
@@ -42,7 +45,7 @@ public class AssinaturaPrestadorService {
         return assinaturas.findByTrabalhadorId(trabalhadorId)
                 .map(this::resposta)
                 .orElse(new AssinaturaPrestadorResponseDTO(
-                        "NONE", false, null, null, null, cobrancaHabilitada()));
+                        "NONE", false, null, null, null, mercadoPago.isConfigured()));
     }
 
     @Transactional
@@ -51,34 +54,30 @@ public class AssinaturaPrestadorService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Prestador não encontrado."));
         AssinaturaPrestador assinatura = assinaturas.findByTrabalhadorId(trabalhador.getId())
-                .orElseGet(() -> {
-                    AssinaturaPrestador nova = new AssinaturaPrestador();
-                    nova.setTrabalhador(trabalhador);
-                    return nova;
-                });
+                .orElseGet(() -> novaAssinatura(trabalhador));
 
-        if ("ACTIVE".equals(assinatura.getStatus())) {
+        if (PROVIDER.equals(assinatura.getProvider()) && "ACTIVE".equals(assinatura.getStatus())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Já existe uma assinatura ativa para este prestador.");
         }
-        if ("PENDING".equals(assinatura.getStatus()) && assinatura.getCheckoutId() != null) {
-            String statusRemoto = abacatePay.statusCheckout(assinatura.getCheckoutId());
-            if ("PENDING".equals(statusRemoto)) return resposta(assinatura);
-            if ("PAID".equals(statusRemoto)) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "Pagamento confirmado; aguardando confirmação da assinatura.");
-            }
-            if (!Set.of("EXPIRED", "CANCELLED", "REFUNDED").contains(statusRemoto)) {
-                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                        "Status do checkout não reconhecido.");
+        if (PROVIDER.equals(assinatura.getProvider())
+                && assinatura.getSubscriptionId() != null
+                && Set.of("PENDING", "PAUSED").contains(assinatura.getStatus())) {
+            JsonNode remote = mercadoPago.getSubscription(assinatura.getSubscriptionId());
+            String status = remote.path("status").asText();
+            if (Set.of("pending", "authorized", "paused").contains(status)) {
+                syncSubscription(assinatura, remote);
+                return resposta(assinaturas.save(assinatura));
             }
         }
 
-        AbacatePayClient.Checkout checkout = abacatePay.criarCheckout(trabalhador.getId());
-        assinatura.setCheckoutId(checkout.id());
-        assinatura.setCheckoutUrl(checkout.url());
-        assinatura.setAmountCents(checkout.amountCents());
-        assinatura.setSubscriptionId(null);
+        MercadoPagoClient.Subscription remote = mercadoPago.createSubscription(
+                trabalhador.getId(), trabalhador.getEmail());
+        assinatura.setProvider(PROVIDER);
+        assinatura.setCheckoutId(null);
+        assinatura.setCheckoutUrl(remote.checkoutUrl());
+        assinatura.setSubscriptionId(remote.id());
+        assinatura.setAmountCents(remote.amountCents());
         assinatura.setActiveUntil(null);
         assinatura.setStatus("PENDING");
         return resposta(assinaturas.save(assinatura));
@@ -89,13 +88,15 @@ public class AssinaturaPrestadorService {
         AssinaturaPrestador assinatura = assinaturas.findByTrabalhadorId(trabalhadorId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Assinatura não encontrada."));
-        if (!"ACTIVE".equals(assinatura.getStatus()) || assinatura.getSubscriptionId() == null) {
+        if (!PROVIDER.equals(assinatura.getProvider()) || assinatura.getSubscriptionId() == null
+                || !Set.of("ACTIVE", "PENDING", "PAUSED").contains(assinatura.getStatus())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Não há assinatura ativa para cancelar.");
+                    "Não há assinatura do Mercado Pago para cancelar.");
         }
-        abacatePay.cancelar(assinatura.getSubscriptionId());
+        mercadoPago.cancel(assinatura.getSubscriptionId());
         assinatura.setStatus("CANCELLED");
         assinatura.setActiveUntil(null);
+        assinatura.setCheckoutUrl(null);
         return resposta(assinaturas.save(assinatura));
     }
 
@@ -106,76 +107,124 @@ public class AssinaturaPrestadorService {
     }
 
     @Transactional
-    public void aplicarEvento(JsonNode payload) {
-        String id = payload.path("id").asText();
-        String event = payload.path("event").asText();
-        if (id.isBlank() || !id.startsWith("log_") || event.isBlank()) {
+    public void aplicarEvento(String notificationId, String topic, String resourceId) {
+        if (notificationId == null || notificationId.isBlank() || resourceId == null || resourceId.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Evento inválido.");
         }
-        if (!EVENTS.contains(event) || eventos.existsById(id)) return;
+        String eventKey = topic + ":" + notificationId;
+        if (!SUPPORTED_TOPICS.contains(topic) || eventos.existsById(eventKey)) return;
 
-        JsonNode data = payload.path("data");
-        String subscriptionId = data.path("subscription").path("id").asText();
-        AssinaturaPrestador assinatura;
-        if ("subscription.completed".equals(event)) {
-            String checkoutId = data.path("checkout").path("id").asText();
-            assinatura = assinaturas.findByCheckoutId(checkoutId).orElse(null);
+        if ("subscription_preapproval".equals(topic)) {
+            applySubscription(resourceId);
         } else {
-            assinatura = assinaturas.findBySubscriptionId(subscriptionId).orElse(null);
+            applyAuthorizedPayment(resourceId);
         }
-        if (assinatura == null) {
-            // Um checkout substituído ou uma assinatura já removida não pode alterar acesso.
-            eventos.save(new EventoAbacatePay(id));
-            return;
-        }
-
-        if ("subscription.cancelled".equals(event)) {
-            assinatura.setStatus("CANCELLED");
-            assinatura.setActiveUntil(null);
-        } else if ("subscription.completed".equals(event) || "subscription.renewed".equals(event)) {
-            if ("CANCELLED".equals(assinatura.getStatus())) {
-                eventos.save(new EventoAbacatePay(id));
-                return;
-            }
-            validarPagamento(data, assinatura, "subscription.completed".equals(event));
-            if ("subscription.completed".equals(event)) assinatura.setSubscriptionId(subscriptionId);
-            assinatura.setAmountCents(data.path("subscription").path("amount").asLong());
-            Instant pagoEm;
-            try {
-                pagoEm = Instant.parse(data.path("payment").path("updatedAt").asText());
-            } catch (RuntimeException ex) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Data de pagamento inválida.");
-            }
-            Instant novaValidade = pagoEm.atZone(ZoneOffset.UTC).plusMonths(1).toInstant();
-            if (assinatura.getActiveUntil() == null || novaValidade.isAfter(assinatura.getActiveUntil())) {
-                assinatura.setActiveUntil(novaValidade);
-            }
-            assinatura.setStatus("ACTIVE");
-        }
-        assinaturas.save(assinatura);
-        eventos.save(new EventoAbacatePay(id));
+        eventos.save(new EventoPagamento(eventKey));
     }
 
-    private void validarPagamento(JsonNode data, AssinaturaPrestador assinatura, boolean primeiraCobranca) {
-        JsonNode subscription = data.path("subscription");
-        JsonNode payment = data.path("payment");
-        if (!"ACTIVE".equals(subscription.path("status").asText())
-                || !"MONTHLY".equals(subscription.path("frequency").asText())
-                || !"PAID".equals(payment.path("status").asText())
-                || subscription.path("amount").asLong(-1) <= 0
-                || payment.path("amount").asLong(-1) != subscription.path("amount").asLong(-1)
-                || (primeiraCobranca && subscription.path("amount").asLong(-1) != assinatura.getAmountCents())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Dados do pagamento não correspondem ao plano mensal.");
+    private void applySubscription(String resourceId) {
+        JsonNode remote = mercadoPago.getSubscription(resourceId);
+        if (!resourceId.equals(remote.path("id").asText())) invalidRemoteData();
+        AssinaturaPrestador assinatura = assinaturas.findBySubscriptionId(resourceId).orElse(null);
+        if (assinatura == null || !PROVIDER.equals(assinatura.getProvider())) return;
+        syncSubscription(assinatura, remote);
+        assinaturas.save(assinatura);
+    }
+
+    private void applyAuthorizedPayment(String resourceId) {
+        JsonNode payment = mercadoPago.getAuthorizedPayment(resourceId);
+        if (!resourceId.equals(payment.path("id").asText())) invalidRemoteData();
+        String subscriptionId = payment.path("preapproval_id").asText();
+        AssinaturaPrestador assinatura = assinaturas.findBySubscriptionId(subscriptionId).orElse(null);
+        if (assinatura == null || !PROVIDER.equals(assinatura.getProvider())) return;
+
+        JsonNode subscription = mercadoPago.getSubscription(subscriptionId);
+        validateSubscription(assinatura, subscription);
+        long paidAmount = cents(payment.path("transaction_amount"));
+        String paymentStatus = payment.path("payment").path("status").asText();
+        if (paidAmount != assinatura.getAmountCents()) invalidRemoteData();
+
+        if ("approved".equals(paymentStatus) && !"CANCELLED".equals(assinatura.getStatus())) {
+            Instant paidAt = parseInstant(payment.path("debit_date").asText());
+            Instant nextPayment = parseOptionalInstant(subscription.path("next_payment_date").asText());
+            Instant newExpiration = nextPayment != null && nextPayment.isAfter(paidAt)
+                    ? nextPayment : paidAt.atZone(ZoneOffset.UTC).plusMonths(1).toInstant();
+            if (assinatura.getActiveUntil() == null || newExpiration.isAfter(assinatura.getActiveUntil())) {
+                assinatura.setActiveUntil(newExpiration);
+            }
+            assinatura.setStatus("ACTIVE");
+            assinatura.setCheckoutUrl(null);
+        } else if (assinatura.getActiveUntil() == null || !assinatura.getActiveUntil().isAfter(Instant.now())) {
+            assinatura.setStatus("EXPIRED");
         }
-        if (primeiraCobranca) {
-            JsonNode items = data.path("checkout").path("items");
-            if (items.size() != 1 || !abacatePay.productId().equals(items.get(0).path("id").asText())
-                    || subscription.path("id").asText().isBlank()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Produto ou assinatura inválida.");
+        assinaturas.save(assinatura);
+    }
+
+    private void syncSubscription(AssinaturaPrestador assinatura, JsonNode remote) {
+        validateSubscription(assinatura, remote);
+        String remoteStatus = remote.path("status").asText();
+        if ("canceled".equals(remoteStatus)) {
+            assinatura.setStatus("CANCELLED");
+            assinatura.setActiveUntil(null);
+            assinatura.setCheckoutUrl(null);
+        } else if ("paused".equals(remoteStatus)) {
+            assinatura.setStatus("PAUSED");
+            assinatura.setActiveUntil(null);
+        } else if ("pending".equals(remoteStatus) && !"ACTIVE".equals(assinatura.getStatus())) {
+            assinatura.setStatus("PENDING");
+        }
+    }
+
+    private void validateSubscription(AssinaturaPrestador assinatura, JsonNode remote) {
+        JsonNode recurring = remote.path("auto_recurring");
+        if (!assinatura.getSubscriptionId().equals(remote.path("id").asText())
+                || !mercadoPago.externalReference(assinatura.getTrabalhador().getId())
+                        .equals(remote.path("external_reference").asText())
+                || recurring.path("frequency").asInt() != 1
+                || !"months".equals(recurring.path("frequency_type").asText())
+                || !"BRL".equals(recurring.path("currency_id").asText())
+                || cents(recurring.path("transaction_amount")) != assinatura.getAmountCents()) {
+            invalidRemoteData();
+        }
+    }
+
+    private long cents(JsonNode amount) {
+        try {
+            java.math.BigDecimal value = amount.isNumber()
+                    ? amount.decimalValue() : new java.math.BigDecimal(amount.asText());
+            return value.movePointRight(2)
+                    .setScale(0, RoundingMode.UNNECESSARY).longValueExact();
+        } catch (ArithmeticException | NumberFormatException ex) {
+            invalidRemoteData();
+            return -1;
+        }
+    }
+
+    private Instant parseInstant(String value) {
+        Instant parsed = parseOptionalInstant(value);
+        if (parsed == null) invalidRemoteData();
+        return parsed;
+    }
+
+    private Instant parseOptionalInstant(String value) {
+        if (value == null || value.isBlank()) return null;
+        try {
+            return OffsetDateTime.parse(value).toInstant().truncatedTo(ChronoUnit.MILLIS);
+        } catch (RuntimeException ex) {
+            try {
+                return Instant.parse(value).truncatedTo(ChronoUnit.MILLIS);
+            } catch (RuntimeException ignored) {
+                invalidRemoteData();
+                return null;
             }
         }
+    }
+
+    private AssinaturaPrestador novaAssinatura(Trabalhador trabalhador) {
+        AssinaturaPrestador assinatura = new AssinaturaPrestador();
+        assinatura.setTrabalhador(trabalhador);
+        assinatura.setProvider(PROVIDER);
+        return assinatura;
     }
 
     private AssinaturaPrestadorResponseDTO resposta(AssinaturaPrestador assinatura) {
@@ -185,10 +234,11 @@ public class AssinaturaPrestadorService {
         return new AssinaturaPrestadorResponseDTO(
                 ativa || !"ACTIVE".equals(assinatura.getStatus()) ? assinatura.getStatus() : "EXPIRED",
                 ativa, assinatura.getActiveUntil(), assinatura.getCheckoutUrl(), assinatura.getAmountCents(),
-                cobrancaHabilitada());
+                mercadoPago.isConfigured());
     }
 
-    private boolean cobrancaHabilitada() {
-        return !abacatePay.productId().isBlank();
+    private static void invalidRemoteData() {
+        throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                "Os dados da cobrança não correspondem ao plano do Facilitei.");
     }
 }

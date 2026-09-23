@@ -35,7 +35,7 @@ public class PortfolioController {
     private AccessControlService access;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "Cria o portfolio de um trabalhador enviando as imagens para o Cloudinary", responses = {
+    @Operation(summary = "Cria o portfolio de um trabalhador armazenando as imagens no S3", responses = {
             @ApiResponse(responseCode = "201", description = "Portfolio criado com sucesso", content = @Content(mediaType = "application/json", schema = @Schema(implementation = PortfolioResponseDTO.class))),
             @ApiResponse(responseCode = "400", description = "Requisição inválida"),
             @ApiResponse(responseCode = "404", description = "Trabalhador não encontrado"),
@@ -82,7 +82,7 @@ public class PortfolioController {
     }
 
     @DeleteMapping("/{portfolioId}/imagens/{imagemId}")
-    @Operation(summary = "Remove uma imagem do portfolio e do Cloudinary", responses = {
+    @Operation(summary = "Remove uma imagem do portfolio e do S3", responses = {
             @ApiResponse(responseCode = "204", description = "Imagem removida com sucesso"),
             @ApiResponse(responseCode = "404", description = "Portfolio ou imagem não encontrado")
     })

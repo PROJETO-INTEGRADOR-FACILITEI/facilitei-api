@@ -22,7 +22,7 @@ public class PortfolioRequestDTO {
     private Long trabalhadorId;
 
     @NotEmpty(message = "É necessário enviar ao menos uma imagem.")
-    @Schema(description = "Imagens do portfolio a serem enviadas para o Cloudinary")
+    @Schema(description = "Imagens do portfolio a serem armazenadas no S3")
     private List<MultipartFile> imagens;
 
     @NotNull(message = "O tipo de serviço é obrigatório.")

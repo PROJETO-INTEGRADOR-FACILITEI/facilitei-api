@@ -19,8 +19,9 @@ Este repositório contém exclusivamente o **back-end (Facilitei-Api)**, respons
 * **Avaliação de Trabalhador** (cliente avalia o profissional)
 * **Avaliação de Cliente** (trabalhador avalia o cliente)
 * **Chat em tempo real entre Trabalhador e Cliente** (WebSocket/STOMP + histórico)
-* **Upload de arquivos/fotos** (Cloudinary)
-* **Portfólio de fotos do Trabalhador** (upload direto para o Cloudinary via API)
+* **Upload de arquivos/fotos** (AWS S3)
+* **Portfólio de fotos do Trabalhador** (upload direto para o S3 via API)
+* **Assinatura mensal dos profissionais** (Mercado Pago)
 * **Precificação de Serviços** (campo `preco` no cadastro/atualização de serviço)
 
 ---
@@ -35,7 +36,8 @@ Este repositório contém exclusivamente o **back-end (Facilitei-Api)**, respons
 * **Versionamento de Schema:** Flyway (migrations em `src/main/resources/db/migration`)
 * **Mapeamento de Objetos:** ModelMapper
 * **Documentação da API:** springdoc-openapi / Swagger UI
-* **Armazenamento de Imagens:** Cloudinary
+* **Armazenamento de Imagens:** AWS S3, com URL pública opcional via CloudFront
+* **Pagamentos Recorrentes:** Mercado Pago Assinaturas
 * **Testes:** JUnit 5, Mockito, MockMvc, JaCoCo (cobertura)
 * **Infraestrutura:** Docker, Docker Compose
 
@@ -51,7 +53,7 @@ Facilitei-Api/
 │   ├── main/
 │   │   ├── java/psg/facilitei/
 │   │   │   ├── Config/                      # Configurações globais
-│   │   │   │   ├── CloudinaryConfig.java
+│   │   │   │   ├── S3Config.java
 │   │   │   │   ├── ModelMapperConfig.java
 │   │   │   │   ├── OpenApiConfig.java
 │   │   │   │   ├── Origins.java             # Configuração de CORS
@@ -183,10 +185,10 @@ Facilitei-Api/
 ### 📎 Arquivos — `/api/arquivos`
 | Método | Endpoint | Descrição |
 |---|---|---|
-| POST | `/api/arquivos/upload` | Faz upload de um arquivo (multipart/form-data) para o Cloudinary e retorna a URL |
+| POST | `/api/arquivos/upload` | Faz upload de uma imagem (multipart/form-data) para o AWS S3 e retorna a URL |
 
 ### 🖼️ Portfolio — `/api/portfolios`
-*(galeria de fotos do trabalhador; um portfolio por trabalhador — a própria API faz o upload das imagens para o Cloudinary, reaproveitando o `CloudinaryService`)*
+*(galeria de fotos do trabalhador; um portfolio por trabalhador — a própria API faz o upload das imagens para o AWS S3 por meio do `StorageService`)*
 
 | Método | Endpoint | Descrição |
 |---|---|---|

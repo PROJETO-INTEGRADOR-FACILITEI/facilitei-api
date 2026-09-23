@@ -16,7 +16,10 @@ import psg.facilitei.Repository.TrabalhadorRepository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@DataJpaTest(properties = "abacatepay.product-id=prod_monthly")
+@DataJpaTest(properties = {
+        "mercadopago.monthly-amount-cents=2990",
+        "mercadopago.access-token=test-token"
+})
 @ActiveProfiles("test")
 @Import(TrabalhadorService.class)
 class TrabalhadorAssinaturaFiltroTest {

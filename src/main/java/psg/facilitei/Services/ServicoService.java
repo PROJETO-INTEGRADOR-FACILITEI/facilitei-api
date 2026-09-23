@@ -53,8 +53,10 @@ public class ServicoService {
     @Autowired
     private NotificationService notificationService;
 
-    @Value("${abacatepay.product-id:}")
-    private String monthlyProductId;
+    @Value("${mercadopago.monthly-amount-cents:0}")
+    private long monthlyAmountCents;
+    @Value("${mercadopago.access-token:}")
+    private String mercadoPagoAccessToken;
 
     public List<ServicoResponseDTO> listarTodos() {
         return servicoRepository.findAll()
@@ -81,7 +83,7 @@ public class ServicoService {
         servico.setDescricao(HtmlSanitizer.sanitize(servico.getDescricao()));
 
         Trabalhador trabalhador = trabalhadorService.buscarEntidadePorId(dto.getTrabalhadorId());
-        if (monthlyProductId != null && !monthlyProductId.isBlank()
+        if (monthlyAmountCents > 0 && mercadoPagoAccessToken != null && !mercadoPagoAccessToken.isBlank()
                 && !assinaturaPrestadorRepository.existsByTrabalhadorIdAndStatusAndActiveUntilAfter(
                         trabalhador.getId(), "ACTIVE", java.time.Instant.now())) {
             throw new BusinessRuleException("Assinatura mensal do profissional inativa.");

@@ -32,13 +32,13 @@ class PortfolioServiceTest {
     @Mock
     private TrabalhadorService trabalhadorService;
     @Mock
-    private CloudinaryService cloudinaryService;
+    private StorageService storageService;
 
     @InjectMocks
     private PortfolioService portfolioService;
 
     @Test
-    void criar_enviaImagemAoCloudinaryESalvaPublicId() {
+    void criar_enviaImagemAoS3ESalvaChave() {
         MockMultipartFile arquivo = new MockMultipartFile(
                 "imagens", "servico.png", "image/png", new byte[] { 1, 2, 3 });
         PortfolioRequestDTO request = new PortfolioRequestDTO(
@@ -48,9 +48,9 @@ class PortfolioServiceTest {
 
         when(portfolioRepository.existsByTrabalhadorId(7L)).thenReturn(false);
         when(trabalhadorService.buscarEntidadePorId(7L)).thenReturn(trabalhador);
-        when(cloudinaryService.uploadImagemPortfolio(arquivo))
-                .thenReturn(new CloudinaryService.UploadImagemResult(
-                        "https://res.cloudinary.com/facilitei/image/upload/servico.png",
+        when(storageService.uploadImage(arquivo, "facilitei/portfolios"))
+                .thenReturn(new StorageService.StoredObject(
+                        "https://cdn.facilitei.app/facilitei/portfolios/servico.png",
                         "facilitei/portfolios/servico"));
         when(portfolioRepository.save(any(Portfolio.class))).thenAnswer(invocation -> {
             Portfolio portfolio = invocation.getArgument(0);
@@ -65,7 +65,7 @@ class PortfolioServiceTest {
         assertEquals(7L, response.getTrabalhadorId());
         assertEquals(11L, response.getImagens().get(0).getId());
         assertEquals(TipoServico.ELETRICISTA, response.getImagens().get(0).getTipoServico());
-        verify(cloudinaryService).uploadImagemPortfolio(arquivo);
+        verify(storageService).uploadImage(arquivo, "facilitei/portfolios");
     }
 
     @Test
@@ -78,12 +78,12 @@ class PortfolioServiceTest {
     }
 
     @Test
-    void removerImagem_apagaNoCloudinaryENoPortfolio() {
+    void removerImagem_apagaNoS3ENoPortfolio() {
         Portfolio portfolio = new Portfolio();
         portfolio.setId(3L);
         PortfolioImagem imagem = new PortfolioImagem();
         imagem.setId(11L);
-        imagem.setUrl("https://res.cloudinary.com/facilitei/image/upload/servico.png");
+        imagem.setUrl("https://cdn.facilitei.app/facilitei/portfolios/servico.png");
         imagem.setPublicId("facilitei/portfolios/servico");
         portfolio.adicionarImagem(imagem);
 
@@ -92,7 +92,7 @@ class PortfolioServiceTest {
         portfolioService.removerImagem(3L, 11L);
 
         assertEquals(0, portfolio.getImagens().size());
-        verify(cloudinaryService).removerImagem("facilitei/portfolios/servico");
+        verify(storageService).delete("facilitei/portfolios/servico");
         verify(portfolioRepository).save(portfolio);
     }
 }
