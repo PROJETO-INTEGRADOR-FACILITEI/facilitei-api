@@ -1,0 +1,76 @@
+services:
+  - type: web
+    name: facilitei-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    region: oregon
+    plan: starter
+    healthCheckPath: /swagger-ui.html
+    envVars:
+      # Banco de dados MySQL externo (inclua ?useSSL=true se o provedor exigir).
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+
+      # Cross-origin com o front no Vercel.
+      - key: MYAPP_CORS_ALLOWED_ORIGINS
+        sync: false            # ex.: https://SEU-FRONT.vercel.app
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+      - key: SESSION_COOKIE_SAME_SITE
+        value: none
+      - key: APP_FRONTEND_URL
+        sync: false            # ex.: https://SEU-FRONT.vercel.app
+      - key: RESET_PASSWORD_URL
+        sync: false            # ex.: https://SEU-FRONT.vercel.app/reset-password
+
+      # Armazenamento S3
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        value: sa-east-1
+      - key: AWS_S3_BUCKET
+        sync: false
+      - key: AWS_S3_PUBLIC_BASE_URL
+        sync: false
+
+      # E-mail (SMTP)
+      - key: MAIL_HOST
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+
+      # Pagamentos Mercado Pago
+      - key: MERCADOPAGO_ACCESS_TOKEN
+        sync: false
+      - key: MERCADOPAGO_WEBHOOK_SECRET
+        sync: false
+      - key: MERCADOPAGO_MONTHLY_AMOUNT_CENTS
+        value: "2990"
+      - key: MERCADOPAGO_REASON
+        value: Facilitei - plano profissional
+
+      # Web Push (VAPID) e admin
+      - key: WEB_PUSH_PUBLIC_KEY
+        sync: false
+      - key: WEB_PUSH_PRIVATE_KEY
+        sync: false
+      - key: WEB_PUSH_SUBJECT
+        value: mailto:contato@facilitei.app
+      - key: APP_ADMIN_EMAILS
+        sync: false
+
+      - key: RATE_LIMIT_ENABLED
+        value: "true"
+      - key: PASSWORD_MIGRATION_ENABLED
+        value: "true"

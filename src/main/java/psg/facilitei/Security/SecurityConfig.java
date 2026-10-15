@@ -1,5 +1,6 @@
 package psg.facilitei.Security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -14,12 +15,24 @@ import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
 @Configuration
 public class SecurityConfig {
+
+    // Alinhados ao cookie de sessao. Cross-origin (Vercel + Render) exige
+    // SameSite=None e Secure=true para o navegador enviar o cookie CSRF.
+    @Value("${app.cookie.same-site:lax}")
+    private String cookieSameSite;
+
+    @Value("${app.cookie.secure:false}")
+    private boolean cookieSecure;
+
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http,
                                             SessionAuthenticationFilter sessionAuthenticationFilter,
                                             SensitiveEndpointRateLimitFilter rateLimitFilter) throws Exception {
         CookieCsrfTokenRepository csrfRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
         csrfRepository.setCookiePath("/");
+        csrfRepository.setCookieCustomizer(cookie -> cookie
+                .sameSite(cookieSameSite)
+                .secure(cookieSecure));
         CsrfTokenRequestAttributeHandler csrfHandler = new CsrfTokenRequestAttributeHandler();
 
         return http

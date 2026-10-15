@@ -1,25 +1,10 @@
 services:
-  db:
-    image: mysql:8.0.44
-    environment:
-      MYSQL_ROOT_PASSWORD: admin
-      MYSQL_DATABASE: faciliteidb
-    ports:
-      - "3306:3306"
-    volumes:
-      - db_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-padmin"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   api:
     build: .
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/faciliteidb?createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_URL: jdbc:mysql://facilitei-db-facilitei-db.h.aivencloud.com:13238
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-root}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-admin}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
@@ -32,13 +17,10 @@ services:
       MERCADOPAGO_WEBHOOK_SECRET: ${MERCADOPAGO_WEBHOOK_SECRET:-}
       MERCADOPAGO_MONTHLY_AMOUNT_CENTS: ${MERCADOPAGO_MONTHLY_AMOUNT_CENTS:-0}
       MERCADOPAGO_REASON: ${MERCADOPAGO_REASON:-Facilitei - plano profissional}
-      MYAPP_CORS_ALLOWED_ORIGINS: ${MYAPP_CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:8080}
+      MYAPP_CORS_ALLOWED_ORIGINS: ${MYAPP_CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:8080,https://facilitei-front.vercel.app/}
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
       RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
       PASSWORD_MIGRATION_ENABLED: ${PASSWORD_MIGRATION_ENABLED:-true}
     depends_on:
       db:
         condition: service_healthy
-
-volumes:
-  db_data:
