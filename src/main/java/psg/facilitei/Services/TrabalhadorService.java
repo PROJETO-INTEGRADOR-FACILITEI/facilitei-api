@@ -11,10 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
-import jakarta.persistence.criteria.Subquery;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
 import psg.facilitei.DTO.EnderecoResponseDTO;
 import psg.facilitei.DTO.ServicoResponseDTO;
 import psg.facilitei.DTO.TrabalhadorRequestDTO;
@@ -26,7 +22,6 @@ import psg.facilitei.Entity.AvaliacaoTrabalhador;
 import psg.facilitei.Entity.Endereco;
 import psg.facilitei.Entity.Servico;
 import psg.facilitei.Entity.Trabalhador;
-import psg.facilitei.Entity.AssinaturaPrestador;
 import psg.facilitei.Entity.Enum.TipoServico;
 import psg.facilitei.Repository.AvaliacaoClienteRepository;
 import psg.facilitei.Repository.AvaliacaoServicoRepository;
@@ -74,8 +69,7 @@ public class TrabalhadorService {
 
     @Transactional(readOnly = true)
     public List<TrabalhadorResponseDTO> findAll() {
-        List<Trabalhador> trabalhadores = repository.findAll(
-                (root, query, cb) -> filtroAssinatura(root, query, cb));
+        List<Trabalhador> trabalhadores = repository.findAll();
 
         Map<Long, List<ResumoAvaliacaoTipoServicoDTO>> resumos = buscarResumos(trabalhadores);
         return trabalhadores.stream()
@@ -88,8 +82,6 @@ public class TrabalhadorService {
             String localizacao, List<TipoServico> tiposServico, Double notaMinima) {
         Specification<Trabalhador> filtros = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-
-            predicates.add(filtroAssinatura(root, query, cb));
 
             if (nome != null && !nome.isBlank()) {
                 predicates.add(cb.like(cb.lower(root.get("nome")),
@@ -123,20 +115,6 @@ public class TrabalhadorService {
         Page<TrabalhadorResponseDTO> resultado = trabalhadores.map(trabalhador ->
                 toResponseDTO(trabalhador, resumos.getOrDefault(trabalhador.getId(), List.of())));
         return TrabalhadorPageResponseDTO.from(resultado);
-    }
-
-    private Predicate filtroAssinatura(Root<Trabalhador> root, CriteriaQuery<?> query,
-                                      CriteriaBuilder cb) {
-        if (monthlyAmountCents <= 0 || mercadoPagoAccessToken == null || mercadoPagoAccessToken.isBlank()) {
-            return cb.conjunction();
-        }
-        Subquery<Long> assinaturasAtivas = query.subquery(Long.class);
-        Root<AssinaturaPrestador> assinatura = assinaturasAtivas.from(AssinaturaPrestador.class);
-        assinaturasAtivas.select(assinatura.get("id")).where(
-                cb.equal(assinatura.get("trabalhador").get("id"), root.get("id")),
-                cb.equal(assinatura.get("status"), "ACTIVE"),
-                cb.greaterThan(assinatura.get("activeUntil"), java.time.Instant.now()));
-        return cb.exists(assinaturasAtivas);
     }
 
     public TrabalhadorResponseDTO atualizar(Long id, TrabalhadorUpdateDTO dto) {
