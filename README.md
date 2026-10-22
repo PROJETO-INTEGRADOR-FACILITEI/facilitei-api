@@ -303,6 +303,29 @@ docker run -p 8080:8080 \
 ```
 > ⚠️ Dentro do container, `localhost` aponta para o próprio container — por isso é necessário apontar para `host.docker.internal` (ou para o nome do serviço do banco, se ambos estiverem na mesma rede Docker) em vez de `localhost`.
 
+#### 6. Deploy no Railway (produção)
+
+A API e o MySQL rodam no mesmo projeto do Railway e conversam pela rede privada (`*.railway.internal`). O `railway.json` na raiz define o build pelo `Dockerfile` e o healthcheck em `/health` (que só responde `200` quando a conexão com o banco está válida).
+
+* API pública: `https://facilitei.velika.com.br` (domínio customizado no Cloudflare apontando para o serviço `facilitei-api`, porta `8080`)
+* Healthcheck: `https://facilitei.velika.com.br/health`
+* Swagger: `https://facilitei.velika.com.br/swagger-ui/index.html`
+
+Variáveis do serviço `facilitei-api` ligadas ao banco (usam referências do Railway, então a senha nunca fica no repositório):
+
+```Bash
+SPRING_DATASOURCE_URL=jdbc:mysql://${{MySQL.MYSQLHOST}}:${{MySQL.MYSQLPORT}}/${{MySQL.MYSQLDATABASE}}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+SPRING_DATASOURCE_USERNAME=${{MySQL.MYSQLUSER}}
+SPRING_DATASOURCE_PASSWORD=${{MySQL.MYSQLPASSWORD}}
+PORT=8080
+MYAPP_CORS_ALLOWED_ORIGINS=https://facilitei-front.vercel.app,https://facilitei.velika.com.br
+SESSION_COOKIE_SECURE=true
+```
+
+O front no Vercel encaminha `/api/*` para `https://facilitei.velika.com.br/api/*` (ver `vercel.json` do front), então para o navegador as chamadas são de mesma origem.
+
+Para acessar o banco de fora do Railway (ex.: DBeaver ou `mysqldump`), use o TCP proxy público do serviço MySQL (variável `MYSQL_PUBLIC_URL`). O banco não fica no domínio `facilitei.velika.com.br`: o proxy do Cloudflare só encaminha HTTP(S), não conexões MySQL.
+
 ---
 
 ## 👥 Contribuições da Equipe
