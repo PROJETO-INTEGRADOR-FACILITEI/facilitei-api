@@ -46,6 +46,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.GET,
+                                "/health",
                                 "/api/auth/csrf",
                                 "/api/trabalhadores/listar/**",
                                 "/api/trabalhadores/buscarPorId/**",
