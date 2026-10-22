@@ -26,6 +26,13 @@ class SecurityIntegrationTest {
     @MockBean AssinaturaPrestadorService assinaturaService;
 
     @Test
+    void healthcheckEhPublicoERespondeUpComBancoDisponivel() throws Exception {
+        mockMvc.perform(get("/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"));
+    }
+
+    @Test
     void endpointProtegidoSemSessaoRetorna401() throws Exception {
         mockMvc.perform(get("/api/servicos"))
                 .andExpect(status().isUnauthorized());
