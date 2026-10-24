@@ -73,9 +73,11 @@ public class SensitiveEndpointRateLimitFilter extends OncePerRequestFilter {
     }
 
     private String clientAddress(HttpServletRequest request) {
-        // X-Forwarded-For só pode ser aceito quando a aplicação conhece e valida
-        // o proxy que o escreveu. Confiar nele diretamente permite contornar o
-        // limite enviando um IP diferente em cada requisição.
+        // Não ler X-Forwarded-For aqui: confiar nele diretamente permite contornar
+        // o limite enviando um IP diferente em cada requisição. Com
+        // server.forward-headers-strategy=native o Tomcat já substitui o
+        // remoteAddr pelo IP do cliente apenas quando a conexão vem de um proxy
+        // interno confiável (ver application.properties).
         return request.getRemoteAddr();
     }
 }
