@@ -36,4 +36,7 @@ public class ServicoResponseDTO {
 
     @Schema(description = "Status atual do serviço", example = "PENDENTE")
     private StatusServico statusServico;
+
+    @Schema(description = "Resumo seguro do cliente associado ao serviço")
+    private ClienteResumoDTO cliente;
 }

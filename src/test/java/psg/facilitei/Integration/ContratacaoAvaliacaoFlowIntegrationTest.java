@@ -9,6 +9,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import psg.facilitei.DTO.AvaliacaoServicoRequestDTO;
 import psg.facilitei.DTO.ServicoRequestDTO;
+import psg.facilitei.DTO.SolicitacaoServicoRequestDTO;
 import psg.facilitei.Entity.Cliente;
 import psg.facilitei.Entity.Enum.TipoServico;
 import psg.facilitei.Entity.Trabalhador;
@@ -42,6 +43,7 @@ class ContratacaoAvaliacaoFlowIntegrationTest {
         cliente.setNome("Cliente Teste");
         cliente.setEmail("cliente.integ@teste.com");
         cliente.setSenha("123456");
+        cliente.setUrlFoto("https://example.com/cliente.jpg");
         cliente = clienteRepository.save(cliente);
 
         Trabalhador trabalhador = new Trabalhador();
@@ -50,12 +52,42 @@ class ContratacaoAvaliacaoFlowIntegrationTest {
         trabalhador.setSenha("123456");
         trabalhador = trabalhadorRepository.save(trabalhador);
 
+        SolicitacaoServicoRequestDTO solicitacaoDto = new SolicitacaoServicoRequestDTO();
+        solicitacaoDto.setClienteId(cliente.getId());
+        solicitacaoDto.setTrabalhadorId(trabalhador.getId());
+        solicitacaoDto.setTipoServico(TipoServico.ELETRICISTA);
+        solicitacaoDto.setDescricao("Preciso instalar tomadas na cozinha");
+
+        String solicitacaoResponse = mockMvc.perform(post("/api/solicitacoes-servico")
+                        .with(csrf())
+                        .sessionAttr("auth.role", "cliente")
+                        .sessionAttr("auth.userId", cliente.getId())
+                        .sessionAttr("auth.name", cliente.getNome())
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(solicitacaoDto)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status", is("PENDENTE")))
+                .andExpect(jsonPath("$.cliente.nome", is("Cliente Teste")))
+                .andExpect(jsonPath("$.cliente.avatarUrl", is("https://example.com/cliente.jpg")))
+                .andReturn().getResponse().getContentAsString();
+
+        Long solicitacaoId = objectMapper.readTree(solicitacaoResponse).get("id").asLong();
+
+        mockMvc.perform(get("/api/solicitacoes-servico")
+                        .sessionAttr("auth.role", "trabalhador")
+                        .sessionAttr("auth.userId", trabalhador.getId())
+                        .sessionAttr("auth.name", trabalhador.getNome()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id", is(solicitacaoId.intValue())))
+                .andExpect(jsonPath("$[0].cliente.nome", is("Cliente Teste")));
+
         ServicoRequestDTO servicoDto = new ServicoRequestDTO();
         servicoDto.setTitulo("Instalação elétrica");
         servicoDto.setDescricao("Instalar tomadas na cozinha");
         servicoDto.setTipoServico(TipoServico.ELETRICISTA);
         servicoDto.setTrabalhadorId(trabalhador.getId());
         servicoDto.setClienteId(cliente.getId());
+        servicoDto.setSolicitacaoId(solicitacaoId);
 
         String servicoResponse = mockMvc.perform(post("/api/servicos")
                         .with(csrf())
@@ -66,6 +98,7 @@ class ContratacaoAvaliacaoFlowIntegrationTest {
                         .content(objectMapper.writeValueAsString(servicoDto)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.titulo", is("Instalação elétrica")))
+                .andExpect(jsonPath("$.cliente.nome", is("Cliente Teste")))
                 .andReturn().getResponse().getContentAsString();
 
         Long servicoId = objectMapper.readTree(servicoResponse).get("id").asLong();

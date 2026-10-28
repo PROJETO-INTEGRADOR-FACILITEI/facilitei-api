@@ -51,6 +51,8 @@ class SolicitacaoServicoServiceTest {
 
         Cliente cliente = new Cliente();
         cliente.setId(1L);
+        cliente.setNome("Maria");
+        cliente.setUrlFoto("https://example.com/maria.jpg");
         Trabalhador trabalhador = new Trabalhador();
         trabalhador.setId(2L);
 
@@ -67,6 +69,8 @@ class SolicitacaoServicoServiceTest {
         assertEquals(StatusSolicitacao.PENDENTE.name(), result.getStatus());
         assertEquals(1L, result.getClienteId());
         assertEquals(7L, result.getId());
+        assertEquals("Maria", result.getCliente().getNome());
+        assertEquals("https://example.com/maria.jpg", result.getCliente().getAvatarUrl());
     }
 
     @Test

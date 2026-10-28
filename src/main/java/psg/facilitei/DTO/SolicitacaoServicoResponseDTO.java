@@ -18,4 +18,5 @@ public class SolicitacaoServicoResponseDTO {
     private TipoServico tipoServico;
     private String descricao;
     private String status;
+    private ClienteResumoDTO cliente;
 }

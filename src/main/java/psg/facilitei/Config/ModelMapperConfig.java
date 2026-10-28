@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 
 import psg.facilitei.DTO.AvaliacaoTrabalhadorResponseDTO;
 import psg.facilitei.DTO.ClienteResponseDTO;
+import psg.facilitei.DTO.ClienteResumoDTO;
 import psg.facilitei.DTO.ServicoRequestDTO;
 import psg.facilitei.DTO.ServicoResponseDTO;
 import psg.facilitei.DTO.SolicitacaoServicoResponseDTO;
@@ -35,6 +36,14 @@ public class ModelMapperConfig {
                                 || context.getSource().getCliente() == null
                                                 ? null
                                                 : context.getSource().getCliente().getId();
+
+                Converter<Servico, ClienteResumoDTO> servicoToClienteResumoConverter = context -> context.getSource() == null
+                                || context.getSource().getCliente() == null
+                                                ? null
+                                                : new ClienteResumoDTO(
+                                                                context.getSource().getCliente().getId(),
+                                                                context.getSource().getCliente().getNome(),
+                                                                context.getSource().getCliente().getUrlFoto());
 
                 Converter<SolicitacaoServico, Long> solicitacaoToClienteIdConverter = context -> context
                                 .getSource() == null || context.getSource().getCliente() == null
@@ -65,6 +74,8 @@ public class ModelMapperConfig {
                                                         ServicoResponseDTO::setTrabalhadorId);
                                         mapper.using(servicoToClienteIdConverter).map(source -> source,
                                                         ServicoResponseDTO::setClienteId);
+                                        mapper.using(servicoToClienteResumoConverter).map(source -> source,
+                                                        ServicoResponseDTO::setCliente);
                                         mapper.map(Servico::getStatusServico, ServicoResponseDTO::setStatusServico);
                                 });
 

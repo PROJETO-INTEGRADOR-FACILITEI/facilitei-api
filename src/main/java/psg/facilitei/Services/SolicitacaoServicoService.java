@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import psg.facilitei.DTO.SolicitacaoServicoRequestDTO;
 import psg.facilitei.DTO.SolicitacaoServicoResponseDTO;
+import psg.facilitei.DTO.ClienteResumoDTO;
 import psg.facilitei.Entity.Cliente;
 import psg.facilitei.Entity.SolicitacaoServico;
 import psg.facilitei.Entity.Trabalhador;
@@ -157,7 +158,12 @@ public class SolicitacaoServicoService {
             entity.getServico() != null ? entity.getServico().getId() : null,
             entity.getTipoServico(),
             entity.getDescricao(),
-            entity.getStatusSolicitacao().name()
+            entity.getStatusSolicitacao().name(),
+            new ClienteResumoDTO(
+                entity.getCliente().getId(),
+                entity.getCliente().getNome(),
+                entity.getCliente().getUrlFoto()
+            )
         );
     }
 
