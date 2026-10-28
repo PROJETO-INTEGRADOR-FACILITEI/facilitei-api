@@ -1,5 +1,6 @@
 package psg.facilitei.Integration;
 
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -7,6 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import psg.facilitei.Services.MercadoPagoWebhookVerifier;
 import psg.facilitei.Services.AssinaturaPrestadorService;
 
@@ -44,7 +46,8 @@ class SecurityIntegrationTest {
                         .sessionAttr("auth.role", "cliente")
                         .sessionAttr("auth.userId", 7L)
                         .sessionAttr("auth.name", "Cliente"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").doesNotExist());
     }
 
     @Test
@@ -68,11 +71,28 @@ class SecurityIntegrationTest {
     }
 
     @Test
-    void mutacaoPublicaSemCsrfRetorna403() throws Exception {
+    void mutacaoPublicaSemCsrfRetorna403EIdentificaFalhaCsrf() throws Exception {
         mockMvc.perform(post("/api/clientes")
                         .contentType("application/json")
                         .content("{}"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("CSRF_INVALID"));
+    }
+
+    @Test
+    void mutacaoComCsrfDiferenteDoCookieIdentificaFalhaCsrf() throws Exception {
+        MvcResult csrfResponse = mockMvc.perform(get("/api/auth/csrf"))
+                .andExpect(status().isOk())
+                .andReturn();
+        Cookie csrfCookie = csrfResponse.getResponse().getCookie("XSRF-TOKEN");
+
+        mockMvc.perform(post("/api/clientes")
+                        .cookie(csrfCookie)
+                        .header("X-XSRF-TOKEN", "token-desatualizado")
+                        .contentType("application/json")
+                        .content("{}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("CSRF_INVALID"));
     }
 
     @Test

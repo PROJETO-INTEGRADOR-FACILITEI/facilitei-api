@@ -12,6 +12,8 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.csrf.InvalidCsrfTokenException;
+import org.springframework.security.web.csrf.MissingCsrfTokenException;
 
 @Configuration
 public class SecurityConfig {
@@ -73,7 +75,12 @@ public class SecurityConfig {
                         .accessDeniedHandler((request, response, exception) -> {
                             response.setStatus(403);
                             response.setContentType("application/json");
-                            response.getWriter().write("{\"message\":\"Acesso negado.\"}");
+                            if (exception instanceof MissingCsrfTokenException
+                                    || exception instanceof InvalidCsrfTokenException) {
+                                response.getWriter().write("{\"code\":\"CSRF_INVALID\",\"message\":\"Token de segurança inválido ou expirado.\"}");
+                            } else {
+                                response.getWriter().write("{\"message\":\"Acesso negado.\"}");
+                            }
                         }))
                 .addFilterBefore(rateLimitFilter, AnonymousAuthenticationFilter.class)
                 .addFilterBefore(sessionAuthenticationFilter, AnonymousAuthenticationFilter.class)
