@@ -17,6 +17,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -35,9 +36,11 @@ class SecurityIntegrationTest {
     }
 
     @Test
-    void endpointProtegidoSemSessaoRetorna401() throws Exception {
+    void endpointProtegidoSemSessaoRetorna401SemCriarSessaoAnonima() throws Exception {
         mockMvc.perform(get("/api/servicos"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(result -> assertNull(result.getRequest().getSession(false)))
+                .andExpect(cookie().doesNotExist("JSESSIONID"));
     }
 
     @Test
