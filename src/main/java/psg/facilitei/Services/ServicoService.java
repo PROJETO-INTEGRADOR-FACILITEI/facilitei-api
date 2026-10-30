@@ -3,7 +3,6 @@ package psg.facilitei.Services;
 import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import psg.facilitei.DTO.ServicoRequestDTO;
 import psg.facilitei.DTO.ServicoResponseDTO;
@@ -53,10 +52,8 @@ public class ServicoService {
     @Autowired
     private NotificationService notificationService;
 
-    @Value("${mercadopago.monthly-amount-cents:0}")
-    private long monthlyAmountCents;
-    @Value("${mercadopago.access-token:}")
-    private String mercadoPagoAccessToken;
+    @Autowired
+    private PaymentEnvironmentGuard paymentEnvironmentGuard;
 
     public List<ServicoResponseDTO> listarTodos() {
         return servicoRepository.findAll()
@@ -83,7 +80,7 @@ public class ServicoService {
         servico.setDescricao(HtmlSanitizer.sanitize(servico.getDescricao()));
 
         Trabalhador trabalhador = trabalhadorService.buscarEntidadePorId(dto.getTrabalhadorId());
-        if (monthlyAmountCents > 0 && mercadoPagoAccessToken != null && !mercadoPagoAccessToken.isBlank()
+        if (paymentEnvironmentGuard.isCheckoutEnabled()
                 && !assinaturaPrestadorRepository.existsByTrabalhadorIdAndStatusAndActiveUntilAfter(
                         trabalhador.getId(), "ACTIVE", java.time.Instant.now())) {
             throw new BusinessRuleException("Assinatura mensal do profissional inativa.");

@@ -109,6 +109,22 @@ public class LegalAcceptanceService {
         return toStatus(repository.findByUserIdAndUserRole(userId, userRole));
     }
 
+    @Transactional(readOnly = true)
+    public void requireCurrentAcceptance(
+            Long userId,
+            String userRole,
+            LegalDocumentType documentType) {
+        validateIdentity(userId, userRole);
+        LegalDocumentResponseDTO current = documents.document(documentType);
+        boolean accepted = repository
+                .existsByUserIdAndUserRoleAndDocumentTypeAndDocumentVersionAndDocumentSha256(
+                        userId, userRole, documentType, current.version(), current.sha256());
+        if (!accepted) {
+            throw new BusinessRuleException(
+                    "Aceite a " + documentType.title() + " vigente antes de continuar.");
+        }
+    }
+
     private void validateIdentity(Long userId, String userRole) {
         if (userId == null || !("cliente".equals(userRole) || "trabalhador".equals(userRole))) {
             throw new BusinessRuleException("Usuário inválido para o registro do aceite jurídico.");

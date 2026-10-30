@@ -36,6 +36,9 @@ class TrabalhadorServiceListagemTest {
     @MockBean
     private LegalAcceptanceService legalAcceptanceService;
 
+    @MockBean
+    private PaymentEnvironmentGuard paymentEnvironmentGuard;
+
     @Autowired
     private TrabalhadorRepository repository;
 

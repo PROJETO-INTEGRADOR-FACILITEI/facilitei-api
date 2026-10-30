@@ -2,7 +2,6 @@ package psg.facilitei.Services;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,10 +39,8 @@ public class SolicitacaoServicoService {
     @Autowired
     private AssinaturaPrestadorRepository assinaturaPrestadorRepository;
 
-    @Value("${mercadopago.monthly-amount-cents:0}")
-    private long monthlyAmountCents;
-    @Value("${mercadopago.access-token:}")
-    private String mercadoPagoAccessToken;
+    @Autowired
+    private PaymentEnvironmentGuard paymentEnvironmentGuard;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -62,7 +59,7 @@ public class SolicitacaoServicoService {
         // 2. Busca e define o Trabalhador (Obrigatório nesta etapa)
         Trabalhador trabalhador = trabalhadorRepository.findById(dto.getTrabalhadorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Trabalhador não encontrado com ID: " + dto.getTrabalhadorId()));
-        if (monthlyAmountCents > 0 && mercadoPagoAccessToken != null && !mercadoPagoAccessToken.isBlank()
+        if (paymentEnvironmentGuard.isCheckoutEnabled()
                 && !assinaturaPrestadorRepository.existsByTrabalhadorIdAndStatusAndActiveUntilAfter(
                         trabalhador.getId(), "ACTIVE", java.time.Instant.now())) {
             throw new BusinessRuleException("Este profissional precisa de uma assinatura mensal ativa.");

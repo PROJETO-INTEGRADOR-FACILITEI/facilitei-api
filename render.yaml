@@ -51,7 +51,23 @@ services:
         sync: false
 
       # Pagamentos Mercado Pago
-      - key: MERCADOPAGO_ACCESS_TOKEN
+      - key: LEGAL_OPERATOR_TYPE
+        value: INDIVIDUAL
+      - key: LEGAL_DISPLAY_NAME
+        value: Arthur Faria Estrela
+      - key: LEGAL_LEGAL_NAME
+        sync: false
+      - key: LEGAL_TAX_ID
+        sync: false
+      - key: LEGAL_BUSINESS_ADDRESS
+        sync: false
+      - key: LEGAL_CONTACT_EMAIL
+        value: contato@facilitei.online
+      - key: LEGAL_PAYMENTS_MODE
+        value: TEST
+      - key: MERCADOPAGO_TEST_ACCESS_TOKEN
+        sync: false
+      - key: MERCADOPAGO_LIVE_ACCESS_TOKEN
         sync: false
       - key: MERCADOPAGO_WEBHOOK_SECRET
         sync: false
@@ -66,7 +82,7 @@ services:
       - key: WEB_PUSH_PRIVATE_KEY
         sync: false
       - key: WEB_PUSH_SUBJECT
-        value: mailto:contato@facilitei.app
+        value: mailto:contato@facilitei.online
       - key: APP_ADMIN_EMAILS
         sync: false
 

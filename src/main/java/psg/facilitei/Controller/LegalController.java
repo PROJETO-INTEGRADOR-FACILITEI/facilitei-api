@@ -15,6 +15,7 @@ import psg.facilitei.DTO.LegalConfigResponseDTO;
 import psg.facilitei.DTO.LegalAcceptanceRequestDTO;
 import psg.facilitei.DTO.LegalDocumentResponseDTO;
 import psg.facilitei.DTO.LegalStatusResponseDTO;
+import psg.facilitei.Domain.LegalDocumentType;
 import psg.facilitei.Security.AccessControlService;
 import psg.facilitei.Services.LegalAcceptanceService;
 import psg.facilitei.Services.LegalDocumentService;
@@ -65,8 +66,12 @@ public class LegalController {
             @Valid @RequestBody LegalAcceptanceRequestDTO request,
             HttpServletRequest httpRequest) {
         var principal = access.current();
+        String context = request.documents() != null
+                && request.documents().size() == 1
+                && request.documents().getFirst().type() == LegalDocumentType.SUBSCRIPTION
+                ? "CHECKOUT" : "REACCEPT";
         return legalAcceptanceService.accept(
-                principal.id(), principal.role(), "REACCEPT", request,
+                principal.id(), principal.role(), context, request,
                 httpRequest.getRemoteAddr(), httpRequest.getHeader("User-Agent"));
     }
 }

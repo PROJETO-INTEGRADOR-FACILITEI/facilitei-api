@@ -33,8 +33,13 @@ class AssinaturaPrestadorServiceTest {
                 .thenReturn(new MercadoPagoClient.Subscription(
                         "pre_test", "https://www.mercadopago.com.br/subscriptions/checkout", 2990));
         when(client.externalReference(anyLong())).thenAnswer(call -> "facilitei-worker-" + call.getArgument(0));
+        LegalAcceptanceService legalAcceptances = mock(LegalAcceptanceService.class);
+        PaymentEnvironmentGuard paymentGuard = mock(PaymentEnvironmentGuard.class);
+        when(paymentGuard.isCheckoutEnabled()).thenReturn(true);
+        when(paymentGuard.paymentMode()).thenReturn("TEST");
+        when(paymentGuard.isTestEnvironment()).thenReturn(true);
         AssinaturaPrestadorService service = new AssinaturaPrestadorService(
-                assinaturas, eventos, client, trabalhadores);
+                assinaturas, eventos, client, trabalhadores, legalAcceptances, paymentGuard);
 
         Trabalhador worker = new Trabalhador();
         worker.setNome("Ana");
@@ -48,6 +53,9 @@ class AssinaturaPrestadorServiceTest {
                 .thenReturn(payment("pay_first", now.minus(1, java.time.temporal.ChronoUnit.DAYS).toString(), 29.90, "approved"));
 
         assertEquals("PENDING", service.iniciar(worker).status());
+        verify(paymentGuard).requireCheckoutReady();
+        verify(legalAcceptances).requireCurrentAcceptance(
+                worker.getId(), "trabalhador", psg.facilitei.Domain.LegalDocumentType.SUBSCRIPTION);
         assertFalse(service.podeUsarPlataforma(worker.getId()));
 
         service.aplicarEvento("notification-1", "subscription_authorized_payment", "pay_first");

@@ -52,6 +52,8 @@ class ServicoServiceTest {
     private SolicitacaoServicoRepository solicitacaoServicoRepository;
     @Mock
     private NotificationService notificationService;
+    @Mock
+    private PaymentEnvironmentGuard paymentEnvironmentGuard;
 
     @InjectMocks
     private ServicoService servicoService;

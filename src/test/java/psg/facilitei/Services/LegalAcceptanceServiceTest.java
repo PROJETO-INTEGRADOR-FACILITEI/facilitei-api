@@ -108,6 +108,18 @@ class LegalAcceptanceServiceTest {
         assertTrue(status.documents().get(LegalDocumentType.TERMS).requiresReaccept());
     }
 
+    @Test
+    void checkoutExigeAceiteDaPoliticaDeAssinaturaVigente() {
+        var subscription = documents.document("subscription");
+        when(repository.existsByUserIdAndUserRoleAndDocumentTypeAndDocumentVersionAndDocumentSha256(
+                42L, "trabalhador", LegalDocumentType.SUBSCRIPTION,
+                subscription.version(), subscription.sha256())).thenReturn(true);
+
+        assertThrows(BusinessRuleException.class, () ->
+                service.requireCurrentAcceptance(41L, "trabalhador", LegalDocumentType.SUBSCRIPTION));
+        service.requireCurrentAcceptance(42L, "trabalhador", LegalDocumentType.SUBSCRIPTION);
+    }
+
     private LegalAcceptanceRequestDTO currentRequest(boolean adultConfirmed) {
         var terms = documents.document("terms");
         var privacy = documents.document("privacy");

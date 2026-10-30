@@ -15,22 +15,25 @@ import psg.facilitei.Repository.AssinaturaPrestadorRepository;
 import psg.facilitei.Repository.TrabalhadorRepository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
 
 @DataJpaTest(properties = {
         "mercadopago.monthly-amount-cents=2990",
-        "mercadopago.access-token=test-token"
+        "mercadopago.test-access-token=TEST-test-token"
 })
 @ActiveProfiles("test")
 @Import(TrabalhadorService.class)
 class TrabalhadorAssinaturaFiltroTest {
     @MockBean PasswordHashService passwordHashService;
     @MockBean LegalAcceptanceService legalAcceptanceService;
+    @MockBean PaymentEnvironmentGuard paymentEnvironmentGuard;
     @Autowired TrabalhadorService service;
     @Autowired TrabalhadorRepository trabalhadores;
     @Autowired AssinaturaPrestadorRepository assinaturas;
 
     @Test
     void listagensMostramSomentePrestadoresComMensalidadeVigente() {
+        when(paymentEnvironmentGuard.isCheckoutEnabled()).thenReturn(true);
         Trabalhador ativo = criar("Ativo", "ativo@example.com");
         criar("Sem assinatura", "sem@example.com");
         Trabalhador vencido = criar("Vencido", "vencido@example.com");
