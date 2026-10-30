@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import psg.facilitei.DTO.AssinaturaPrestadorResponseDTO;
+import psg.facilitei.Domain.LegalDocumentType;
 import psg.facilitei.Entity.AssinaturaPrestador;
 import psg.facilitei.Entity.EventoPagamento;
 import psg.facilitei.Entity.Trabalhador;
@@ -29,15 +30,21 @@ public class AssinaturaPrestadorService {
     private final EventoPagamentoRepository eventos;
     private final MercadoPagoClient mercadoPago;
     private final TrabalhadorRepository trabalhadores;
+    private final LegalAcceptanceService legalAcceptances;
+    private final PaymentEnvironmentGuard paymentGuard;
 
     public AssinaturaPrestadorService(AssinaturaPrestadorRepository assinaturas,
                                       EventoPagamentoRepository eventos,
                                       MercadoPagoClient mercadoPago,
-                                      TrabalhadorRepository trabalhadores) {
+                                      TrabalhadorRepository trabalhadores,
+                                      LegalAcceptanceService legalAcceptances,
+                                      PaymentEnvironmentGuard paymentGuard) {
         this.assinaturas = assinaturas;
         this.eventos = eventos;
         this.mercadoPago = mercadoPago;
         this.trabalhadores = trabalhadores;
+        this.legalAcceptances = legalAcceptances;
+        this.paymentGuard = paymentGuard;
     }
 
     @Transactional(readOnly = true)
@@ -45,11 +52,15 @@ public class AssinaturaPrestadorService {
         return assinaturas.findByTrabalhadorId(trabalhadorId)
                 .map(this::resposta)
                 .orElse(new AssinaturaPrestadorResponseDTO(
-                        "NONE", false, null, null, null, mercadoPago.isConfigured()));
+                        "NONE", false, null, null, null, paymentGuard.isCheckoutEnabled(),
+                        paymentGuard.paymentMode(), paymentGuard.isTestEnvironment()));
     }
 
     @Transactional
     public AssinaturaPrestadorResponseDTO iniciar(Trabalhador trabalhador) {
+        paymentGuard.requireCheckoutReady();
+        legalAcceptances.requireCurrentAcceptance(
+                trabalhador.getId(), "trabalhador", LegalDocumentType.SUBSCRIPTION);
         trabalhadores.lockById(trabalhador.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Prestador não encontrado."));
@@ -234,7 +245,8 @@ public class AssinaturaPrestadorService {
         return new AssinaturaPrestadorResponseDTO(
                 ativa || !"ACTIVE".equals(assinatura.getStatus()) ? assinatura.getStatus() : "EXPIRED",
                 ativa, assinatura.getActiveUntil(), assinatura.getCheckoutUrl(), assinatura.getAmountCents(),
-                mercadoPago.isConfigured());
+                paymentGuard.isCheckoutEnabled(), paymentGuard.paymentMode(),
+                paymentGuard.isTestEnvironment());
     }
 
     private static void invalidRemoteData() {

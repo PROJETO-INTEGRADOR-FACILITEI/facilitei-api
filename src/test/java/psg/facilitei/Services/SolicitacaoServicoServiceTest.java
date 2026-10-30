@@ -37,6 +37,8 @@ class SolicitacaoServicoServiceTest {
     private ModelMapper modelMapper;
     @Mock
     private NotificationService notificationService;
+    @Mock
+    private PaymentEnvironmentGuard paymentEnvironmentGuard;
 
     @InjectMocks
     private SolicitacaoServicoService solicitacaoServicoService;

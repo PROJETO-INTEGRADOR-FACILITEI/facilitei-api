@@ -2,7 +2,6 @@ package psg.facilitei.Services;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -45,10 +44,8 @@ public class TrabalhadorService {
 
     @Autowired
     private TrabalhadorRepository repository;
-    @Value("${mercadopago.monthly-amount-cents:0}")
-    private long monthlyAmountCents;
-    @Value("${mercadopago.access-token:}")
-    private String mercadoPagoAccessToken;
+    @Autowired
+    private PaymentEnvironmentGuard paymentEnvironmentGuard;
     @Autowired
     private ServicoRepository servicoRepository;
     @Autowired
@@ -135,9 +132,7 @@ public class TrabalhadorService {
     }
 
     private boolean assinaturaObrigatoria() {
-        return monthlyAmountCents > 0
-                && mercadoPagoAccessToken != null
-                && !mercadoPagoAccessToken.isBlank();
+        return paymentEnvironmentGuard.isCheckoutEnabled();
     }
 
     public TrabalhadorResponseDTO atualizar(Long id, TrabalhadorUpdateDTO dto) {

@@ -15,13 +15,13 @@ import org.springframework.web.server.ResponseStatusException;
 @Component
 public class MercadoPagoClient {
     private final RestClient restClient;
-    private final String accessToken;
+    private final PaymentEnvironmentGuard paymentGuard;
     private final long monthlyAmountCents;
     private final String reason;
     private final String returnUrl;
 
     public MercadoPagoClient(@Value("${mercadopago.base-url:https://api.mercadopago.com}") String baseUrl,
-                             @Value("${mercadopago.access-token:}") String accessToken,
+                             PaymentEnvironmentGuard paymentGuard,
                              @Value("${mercadopago.monthly-amount-cents:0}") long monthlyAmountCents,
                              @Value("${mercadopago.reason:Facilitei - plano profissional}") String reason,
                              @Value("${app.frontend-url:http://localhost:5173}") String frontendUrl) {
@@ -29,7 +29,7 @@ public class MercadoPagoClient {
         requestFactory.setConnectTimeout(10_000);
         requestFactory.setReadTimeout(15_000);
         this.restClient = RestClient.builder().baseUrl(baseUrl).requestFactory(requestFactory).build();
-        this.accessToken = accessToken == null ? "" : accessToken.trim();
+        this.paymentGuard = paymentGuard;
         this.monthlyAmountCents = monthlyAmountCents;
         this.reason = reason;
         this.returnUrl = frontendUrl.replaceAll("/+$", "") + "/painel/assinatura";
@@ -71,7 +71,7 @@ public class MercadoPagoClient {
     }
 
     public boolean isConfigured() {
-        return !accessToken.isBlank() && monthlyAmountCents > 0;
+        return paymentGuard.isCheckoutEnabled();
     }
 
     public long monthlyAmountCents() {
@@ -86,7 +86,7 @@ public class MercadoPagoClient {
         requireConfiguration();
         try {
             JsonNode response = restClient.post().uri(path)
-                    .header("Authorization", "Bearer " + accessToken)
+                    .header("Authorization", "Bearer " + paymentGuard.accessToken())
                     .header("X-Idempotency-Key", idempotencyKey)
                     .body(body).retrieve().body(JsonNode.class);
             if (response == null) throw badGateway("O Mercado Pago retornou uma resposta vazia.");
@@ -101,7 +101,7 @@ public class MercadoPagoClient {
         requireConfiguration();
         try {
             JsonNode response = restClient.get().uri(path, id)
-                    .header("Authorization", "Bearer " + accessToken)
+                    .header("Authorization", "Bearer " + paymentGuard.accessToken())
                     .retrieve().body(JsonNode.class);
             if (response == null) throw badGateway("O Mercado Pago retornou uma resposta vazia.");
             return response;
@@ -115,7 +115,7 @@ public class MercadoPagoClient {
         requireConfiguration();
         try {
             restClient.put().uri(path, id)
-                    .header("Authorization", "Bearer " + accessToken)
+                    .header("Authorization", "Bearer " + paymentGuard.accessToken())
                     .body(body).retrieve().toBodilessEntity();
         } catch (RestClientException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
@@ -124,10 +124,7 @@ public class MercadoPagoClient {
     }
 
     private void requireConfiguration() {
-        if (!isConfigured()) {
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
-                    "Assinaturas do Mercado Pago ainda não configuradas.");
-        }
+        paymentGuard.requireCheckoutReady();
     }
 
     private ResponseStatusException badGateway(String message) {
