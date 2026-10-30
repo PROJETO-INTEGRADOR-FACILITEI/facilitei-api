@@ -26,6 +26,7 @@ class AssinaturaPrestadorServiceTest {
 
     @Test
     void pagamentoRenovacaoECancelamentoControlamAcessoSemDuplicarEvento() throws Exception {
+        Instant now = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
         MercadoPagoClient client = mock(MercadoPagoClient.class);
         when(client.isConfigured()).thenReturn(true);
         when(client.createSubscription(anyLong(), eq("ana@example.com")))
@@ -41,10 +42,10 @@ class AssinaturaPrestadorServiceTest {
         worker.setSenha("senha");
         worker = trabalhadores.save(worker);
 
-        JsonNode subscription = subscription(worker.getId(), "authorized", "2026-10-22T12:00:00Z");
+        JsonNode subscription = subscription(worker.getId(), "authorized", now.plus(29, java.time.temporal.ChronoUnit.DAYS).toString());
         when(client.getSubscription("pre_test")).thenReturn(subscription);
         when(client.getAuthorizedPayment("pay_first"))
-                .thenReturn(payment("pay_first", "2026-09-22T12:00:00Z", 29.90, "approved"));
+                .thenReturn(payment("pay_first", now.minus(1, java.time.temporal.ChronoUnit.DAYS).toString(), 29.90, "approved"));
 
         assertEquals("PENDING", service.iniciar(worker).status());
         assertFalse(service.podeUsarPlataforma(worker.getId()));
@@ -58,9 +59,9 @@ class AssinaturaPrestadorServiceTest {
         assertEquals(firstUntil, service.consultar(worker.getId()).ativaAte());
 
         when(client.getAuthorizedPayment("pay_second"))
-                .thenReturn(payment("pay_second", "2026-10-22T12:00:00Z", 29.90, "approved"));
+                .thenReturn(payment("pay_second", now.plus(29, java.time.temporal.ChronoUnit.DAYS).toString(), 29.90, "approved"));
         when(client.getSubscription("pre_test"))
-                .thenReturn(subscription(worker.getId(), "authorized", "2026-11-22T12:00:00Z"));
+                .thenReturn(subscription(worker.getId(), "authorized", now.plus(59, java.time.temporal.ChronoUnit.DAYS).toString()));
         service.aplicarEvento("notification-2", "subscription_authorized_payment", "pay_second");
         assertTrue(service.consultar(worker.getId()).ativaAte().isAfter(firstUntil));
 
@@ -69,7 +70,7 @@ class AssinaturaPrestadorServiceTest {
         assertEquals("CANCELLED", service.consultar(worker.getId()).status());
 
         when(client.getAuthorizedPayment("pay_late"))
-                .thenReturn(payment("pay_late", "2026-11-22T12:00:00Z", 29.90, "approved"));
+                .thenReturn(payment("pay_late", now.plus(89, java.time.temporal.ChronoUnit.DAYS).toString(), 29.90, "approved"));
         service.aplicarEvento("notification-3", "subscription_authorized_payment", "pay_late");
         assertFalse(service.podeUsarPlataforma(worker.getId()));
     }
