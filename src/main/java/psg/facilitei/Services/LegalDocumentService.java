@@ -72,6 +72,10 @@ public class LegalDocumentService {
         return documents.get(type);
     }
 
+    public LegalDocumentResponseDTO document(LegalDocumentType type) {
+        return documents.get(type);
+    }
+
     private LegalProperties.Document metadata(LegalDocumentType type) {
         return switch (type) {
             case TERMS -> properties.getDocuments().getTerms();

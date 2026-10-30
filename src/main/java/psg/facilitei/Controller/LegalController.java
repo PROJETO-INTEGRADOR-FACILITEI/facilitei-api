@@ -1,14 +1,22 @@
 package psg.facilitei.Controller;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import java.time.Duration;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import psg.facilitei.DTO.LegalConfigResponseDTO;
+import psg.facilitei.DTO.LegalAcceptanceRequestDTO;
 import psg.facilitei.DTO.LegalDocumentResponseDTO;
+import psg.facilitei.DTO.LegalStatusResponseDTO;
+import psg.facilitei.Security.AccessControlService;
+import psg.facilitei.Services.LegalAcceptanceService;
 import psg.facilitei.Services.LegalDocumentService;
 
 @RestController
@@ -20,9 +28,16 @@ public class LegalController {
             .cachePublic();
 
     private final LegalDocumentService legalDocumentService;
+    private final LegalAcceptanceService legalAcceptanceService;
+    private final AccessControlService access;
 
-    public LegalController(LegalDocumentService legalDocumentService) {
+    public LegalController(
+            LegalDocumentService legalDocumentService,
+            LegalAcceptanceService legalAcceptanceService,
+            AccessControlService access) {
         this.legalDocumentService = legalDocumentService;
+        this.legalAcceptanceService = legalAcceptanceService;
+        this.access = access;
     }
 
     @GetMapping("/config")
@@ -37,5 +52,21 @@ public class LegalController {
         return ResponseEntity.ok()
                 .cacheControl(PUBLIC_CACHE)
                 .body(legalDocumentService.document(type));
+    }
+
+    @GetMapping("/status")
+    public LegalStatusResponseDTO status() {
+        var principal = access.current();
+        return legalAcceptanceService.status(principal.id(), principal.role());
+    }
+
+    @PostMapping("/acceptances")
+    public LegalStatusResponseDTO accept(
+            @Valid @RequestBody LegalAcceptanceRequestDTO request,
+            HttpServletRequest httpRequest) {
+        var principal = access.current();
+        return legalAcceptanceService.accept(
+                principal.id(), principal.role(), "REACCEPT", request,
+                httpRequest.getRemoteAddr(), httpRequest.getHeader("User-Agent"));
     }
 }

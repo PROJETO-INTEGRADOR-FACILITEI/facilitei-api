@@ -53,10 +53,14 @@ public class ClienteService {
     @Autowired
     private PasswordHashService passwordHashService;
 
+    @Autowired
+    private LegalAcceptanceService legalAcceptanceService;
+
     private Logger logger = Logger.getLogger(ClienteService.class.getName());
 
     // ===================== CRIAÇÃO =====================
-    public ClienteResponseDTO create(ClienteRequestDTO dto) {
+    @Transactional
+    public ClienteResponseDTO create(ClienteRequestDTO dto, String remoteAddress, String userAgent) {
         logger.info("Criando cliente");
         Cliente cliente = modelMapper.map(dto, Cliente.class);
         cliente.setNome(HtmlSanitizer.sanitize(cliente.getNome()));
@@ -71,6 +75,9 @@ public class ClienteService {
             cliente.setEndereco(modelMapper.map(dto.getEndereco(), Endereco.class));
         }
         Cliente savedCliente = repository.save(cliente);
+        legalAcceptanceService.accept(
+                savedCliente.getId(), "cliente", "REGISTRATION",
+                dto.getLegalAcceptance(), remoteAddress, userAgent);
         return modelMapper.map(savedCliente, ClienteResponseDTO.class);
     }
 

@@ -61,10 +61,19 @@ public class TrabalhadorService {
     private AssinaturaPrestadorRepository assinaturaPrestadorRepository;
     @Autowired
     private PasswordHashService passwordHashService;
+    @Autowired
+    private LegalAcceptanceService legalAcceptanceService;
 
 
-    public TrabalhadorResponseDTO createTrabalhador(TrabalhadorRequestDTO trabalhadorRequestDTO) {
+    @Transactional
+    public TrabalhadorResponseDTO createTrabalhador(
+            TrabalhadorRequestDTO trabalhadorRequestDTO,
+            String remoteAddress,
+            String userAgent) {
         Trabalhador trabalhador = repository.save(toEntity(trabalhadorRequestDTO));
+        legalAcceptanceService.accept(
+                trabalhador.getId(), "trabalhador", "REGISTRATION",
+                trabalhadorRequestDTO.getLegalAcceptance(), remoteAddress, userAgent);
         return toResponseDTO(trabalhador);
     }
 

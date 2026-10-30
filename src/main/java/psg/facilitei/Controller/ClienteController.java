@@ -17,6 +17,7 @@ import psg.facilitei.Services.ClienteService;
 import psg.facilitei.Security.AccessControlService;
 
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
 import java.util.Map;
@@ -41,9 +42,12 @@ public class ClienteController {
                         @ApiResponse(responseCode = "500", description = "Erro interno do servidor.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
         })
         @PostMapping(consumes = "application/json", produces = "application/json")
-        public ResponseEntity<ClienteResponseDTO> create(@Valid @RequestBody ClienteRequestDTO dto) {
+        public ResponseEntity<ClienteResponseDTO> create(
+                        @Valid @RequestBody ClienteRequestDTO dto,
+                        HttpServletRequest request) {
                 logger.info("Criando cliente");
-                return ResponseEntity.ok(clienteService.create(dto));
+                return ResponseEntity.ok(clienteService.create(
+                                dto, request.getRemoteAddr(), request.getHeader("User-Agent")));
         }
 
         @GetMapping(value = "/id/{id}", produces = "application/json")
