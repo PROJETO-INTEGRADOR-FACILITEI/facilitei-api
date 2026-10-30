@@ -3,6 +3,7 @@ package psg.facilitei.DTO;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -35,5 +36,7 @@ public class TrabalhadorRequestDTO {
     private String senha;
     private String sobre;
     private String avatarUrl;
+    @Valid
+    private LegalAcceptanceRequestDTO legalAcceptance;
 
 }

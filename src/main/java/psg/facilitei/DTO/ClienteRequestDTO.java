@@ -28,4 +28,6 @@ public class ClienteRequestDTO {
     private EnderecoRequestDTO endereco;
     private String telefone;
     private String avatarUrl;
+    @Valid
+    private LegalAcceptanceRequestDTO legalAcceptance;
 }

@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 import psg.facilitei.Repository.TrabalhadorRepository;
 import psg.facilitei.DTO.TrabalhadorRequestDTO;
 import psg.facilitei.DTO.TrabalhadorPageResponseDTO;
@@ -49,8 +50,12 @@ public class TrabalhadorController {
         })
         @PostMapping
         public ResponseEntity<TrabalhadorResponseDTO> CreateTrabalhador(
-                        @Valid @RequestBody TrabalhadorRequestDTO trabalhadorRequestDTO) {
-                TrabalhadorResponseDTO createdTrabalhador = service.createTrabalhador(trabalhadorRequestDTO);
+                        @Valid @RequestBody TrabalhadorRequestDTO trabalhadorRequestDTO,
+                        HttpServletRequest request) {
+                TrabalhadorResponseDTO createdTrabalhador = service.createTrabalhador(
+                                trabalhadorRequestDTO,
+                                request.getRemoteAddr(),
+                                request.getHeader("User-Agent"));
                 return ResponseEntity.status(201).body(createdTrabalhador);
         }
 

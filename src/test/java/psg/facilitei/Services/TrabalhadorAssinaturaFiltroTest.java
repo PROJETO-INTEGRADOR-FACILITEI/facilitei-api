@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Import(TrabalhadorService.class)
 class TrabalhadorAssinaturaFiltroTest {
     @MockBean PasswordHashService passwordHashService;
+    @MockBean LegalAcceptanceService legalAcceptanceService;
     @Autowired TrabalhadorService service;
     @Autowired TrabalhadorRepository trabalhadores;
     @Autowired AssinaturaPrestadorRepository assinaturas;
