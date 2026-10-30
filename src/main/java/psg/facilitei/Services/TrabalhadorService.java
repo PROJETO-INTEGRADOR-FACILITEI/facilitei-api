@@ -38,6 +38,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.stream.Collectors;
+import java.time.Instant;
 
 @Service
 public class TrabalhadorService {
@@ -69,7 +70,9 @@ public class TrabalhadorService {
 
     @Transactional(readOnly = true)
     public List<TrabalhadorResponseDTO> findAll() {
-        List<Trabalhador> trabalhadores = repository.findAll();
+        List<Trabalhador> trabalhadores = assinaturaObrigatoria()
+                ? repository.findAllById(assinaturaPrestadorRepository.findActiveTrabalhadorIds(Instant.now()))
+                : repository.findAll();
 
         Map<Long, List<ResumoAvaliacaoTipoServicoDTO>> resumos = buscarResumos(trabalhadores);
         return trabalhadores.stream()
@@ -82,6 +85,11 @@ public class TrabalhadorService {
             String localizacao, List<TipoServico> tiposServico, Double notaMinima) {
         Specification<Trabalhador> filtros = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+
+            if (assinaturaObrigatoria()) {
+                predicates.add(root.get("id").in(
+                        assinaturaPrestadorRepository.findActiveTrabalhadorIds(Instant.now())));
+            }
 
             if (nome != null && !nome.isBlank()) {
                 predicates.add(cb.like(cb.lower(root.get("nome")),
@@ -115,6 +123,12 @@ public class TrabalhadorService {
         Page<TrabalhadorResponseDTO> resultado = trabalhadores.map(trabalhador ->
                 toResponseDTO(trabalhador, resumos.getOrDefault(trabalhador.getId(), List.of())));
         return TrabalhadorPageResponseDTO.from(resultado);
+    }
+
+    private boolean assinaturaObrigatoria() {
+        return monthlyAmountCents > 0
+                && mercadoPagoAccessToken != null
+                && !mercadoPagoAccessToken.isBlank();
     }
 
     public TrabalhadorResponseDTO atualizar(Long id, TrabalhadorUpdateDTO dto) {
