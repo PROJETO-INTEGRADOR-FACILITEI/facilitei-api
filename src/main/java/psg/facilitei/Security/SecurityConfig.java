@@ -56,6 +56,7 @@ public class SecurityConfig {
                                 "/api/trabalhadores/buscarPorId/**",
                                 "/api/portfolios/**",
                                 "/api/avaliacoes-servico/trabalhador/**",
+                                "/api/legal/**",
                                 "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.POST,
                                 "/api/auth/login",
