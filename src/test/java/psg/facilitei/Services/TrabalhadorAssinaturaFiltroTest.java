@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 @Import(TrabalhadorService.class)
 class TrabalhadorAssinaturaFiltroTest {
     @MockBean PasswordHashService passwordHashService;
+    @MockBean PasswordPolicyService passwordPolicyService;
     @MockBean LegalAcceptanceService legalAcceptanceService;
     @MockBean PaymentEnvironmentGuard paymentEnvironmentGuard;
     @Autowired TrabalhadorService service;

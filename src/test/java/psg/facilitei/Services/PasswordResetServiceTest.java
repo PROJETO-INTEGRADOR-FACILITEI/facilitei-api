@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import psg.facilitei.Entity.PasswordResetToken;
@@ -36,6 +37,8 @@ class PasswordResetServiceTest {
     private EmailService emailService;
     @Mock
     private PasswordHashService passwordHashService;
+    @Spy
+    private PasswordPolicyService passwordPolicyService = new PasswordPolicyService();
 
     @InjectMocks
     private PasswordResetService passwordResetService;
@@ -88,9 +91,9 @@ class PasswordResetServiceTest {
 
         when(passwordResetTokenRepository.findByToken("abc123")).thenReturn(Optional.of(token));
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(passwordHashService.hash("senhaNova")).thenReturn("$2a$hash");
+        when(passwordHashService.hash("senhaNovaSegura")).thenReturn("$2a$hash");
 
-        passwordResetService.redefinirSenha("abc123", "senhaNova");
+        passwordResetService.redefinirSenha("abc123", "senhaNovaSegura");
 
         assertEquals("$2a$hash", usuario.getSenha());
         assertTrue(token.isUsado());
@@ -132,5 +135,26 @@ class PasswordResetServiceTest {
 
         assertThrows(BusinessRuleException.class,
                 () -> passwordResetService.redefinirSenha("usado", "senhaNova"));
+    }
+
+    @Test
+    void redefinirSenha_comSenhaComum_mantemSenhaETokenInalterados() {
+        PasswordResetToken token = new PasswordResetToken();
+        token.setToken("abc123");
+        token.setUsuarioId(1L);
+        token.setUsado(false);
+        token.setDataExpiracao(LocalDateTime.now().plusMinutes(10));
+
+        Usuario usuario = new Usuario();
+        usuario.setId(1L);
+        usuario.setSenha("senhaAntiga");
+
+        when(passwordResetTokenRepository.findByToken("abc123")).thenReturn(Optional.of(token));
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+
+        assertThrows(BusinessRuleException.class,
+                () -> passwordResetService.redefinirSenha("abc123", "senha12345678"));
+        assertEquals("senhaAntiga", usuario.getSenha());
+        assertFalse(token.isUsado());
     }
 }

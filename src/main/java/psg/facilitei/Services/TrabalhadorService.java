@@ -59,6 +59,8 @@ public class TrabalhadorService {
     @Autowired
     private PasswordHashService passwordHashService;
     @Autowired
+    private PasswordPolicyService passwordPolicyService;
+    @Autowired
     private LegalAcceptanceService legalAcceptanceService;
 
 
@@ -193,6 +195,7 @@ public class TrabalhadorService {
     }
 
     public Trabalhador toEntity(TrabalhadorRequestDTO dto) {
+        passwordPolicyService.validate(dto.getSenha());
         Trabalhador trabalhador = new Trabalhador();
 
         trabalhador.setNome(HtmlSanitizer.sanitize(dto.getNome()));
