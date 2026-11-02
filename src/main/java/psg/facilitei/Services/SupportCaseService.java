@@ -118,12 +118,19 @@ public class SupportCaseService {
         supportCase.setUpdatedAt(now);
         supportCase = cases.save(supportCase);
 
-        addHistory(supportCase, reporter, SupportEventType.CRIADO,
-                request.type() == SupportCaseType.DISPUTA ? "Disputa aberta pelo usuário." : "Denúncia aberta pelo usuário.");
+        addHistory(supportCase, reporter, SupportEventType.CRIADO, switch (request.type()) {
+            case SUPORTE -> "Atendimento de suporte aberto pelo usuário.";
+            case DENUNCIA -> "Denúncia aberta pelo usuário.";
+            case DISPUTA -> "Disputa aberta pelo usuário.";
+        });
         notifyAdmins(
                 supportCase,
                 NotificationType.NEW_SUPPORT_CASE,
-                supportCase.getType() == SupportCaseType.DISPUTA ? "Nova disputa" : "Nova denúncia",
+                switch (supportCase.getType()) {
+                    case SUPORTE -> "Novo atendimento de suporte";
+                    case DENUNCIA -> "Nova denúncia";
+                    case DISPUTA -> "Nova disputa";
+                },
                 supportCase.getProtocol() + " · " + supportCase.getSubject());
         return toDetail(supportCase, false);
     }
