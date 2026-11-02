@@ -125,6 +125,16 @@ public class LegalAcceptanceService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public boolean hasCurrentGlobalAcceptance(Long userId, String userRole) {
+        validateIdentity(userId, userRole);
+        return GLOBAL_DOCUMENTS.stream().allMatch(type -> {
+            LegalDocumentResponseDTO current = documents.document(type);
+            return repository.existsByUserIdAndUserRoleAndDocumentTypeAndDocumentVersionAndDocumentSha256(
+                    userId, userRole, type, current.version(), current.sha256());
+        });
+    }
+
     private void validateIdentity(Long userId, String userRole) {
         if (userId == null || !("cliente".equals(userRole) || "trabalhador".equals(userRole))) {
             throw new BusinessRuleException("Usuário inválido para o registro do aceite jurídico.");

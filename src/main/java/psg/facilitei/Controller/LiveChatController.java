@@ -11,6 +11,7 @@ import psg.facilitei.Entity.Mensagem;
 import psg.facilitei.Repository.MensagemRepository;
 import psg.facilitei.Repository.ServicoRepository;
 import psg.facilitei.Services.NotificationService;
+import psg.facilitei.Services.LegalAcceptanceService;
 import psg.facilitei.Entity.Enum.NotificationType;
 
 import java.time.LocalDateTime;
@@ -36,6 +37,9 @@ public class LiveChatController {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private LegalAcceptanceService legalAcceptances;
+
     // 1. Endpoint para enviar mensagem via WebSocket
     // O cliente manda para: /app/chat/{servicoId}
     // O servidor distribui para quem ouve: /topics/chat/{servicoId}
@@ -44,6 +48,10 @@ public class LiveChatController {
     public Mensagem sendMessage(@DestinationVariable Long servicoId, ChatInput input, Principal principal) {
         access.requireServiceParticipant(servicoId, principal);
         AuthenticatedPrincipal actor = access.fromPrincipal(principal);
+        if (!legalAcceptances.hasCurrentGlobalAcceptance(actor.id(), actor.role())) {
+            throw new BusinessRuleException(
+                    "Aceite os Termos de Uso e a Política de Privacidade vigentes antes de continuar.");
+        }
         if (input.message() == null || input.message().isBlank() || input.message().length() > 2000) {
             throw new BusinessRuleException("A mensagem deve ter entre 1 e 2000 caracteres.");
         }

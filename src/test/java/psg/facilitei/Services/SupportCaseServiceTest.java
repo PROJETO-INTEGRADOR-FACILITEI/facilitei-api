@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 import static org.mockito.ArgumentMatchers.any;
 
 import java.util.List;
@@ -45,12 +46,13 @@ class SupportCaseServiceTest {
     @Mock TrabalhadorRepository workers;
     @Mock AdminAccessService adminAccess;
     @Mock NotificationService notifications;
+    @Mock EmailService emails;
     private SupportCaseService service;
 
     @BeforeEach
     void setUp() {
         service = new SupportCaseService(cases, messages, history, users, services,
-                clients, workers, adminAccess, notifications);
+                clients, workers, adminAccess, notifications, emails);
     }
 
     @Test
@@ -141,6 +143,8 @@ class SupportCaseServiceTest {
         assertNotNull(reported.getSuspendedAt());
         assertEquals("Fraude confirmada após análise das evidências.", reported.getSuspensionReason());
         assertEquals(AccountStatus.SUSPENDED, detail.reportedUserAccountStatus());
+        verify(emails).enviarEmailDecisaoConta(
+                "reportado@example.com", true, "Fraude confirmada após análise das evidências.");
     }
 
     @Test

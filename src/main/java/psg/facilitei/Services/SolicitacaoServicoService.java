@@ -13,6 +13,7 @@ import psg.facilitei.Entity.SolicitacaoServico;
 import psg.facilitei.Entity.Trabalhador;
 import psg.facilitei.Entity.Enum.StatusSolicitacao;
 import psg.facilitei.Entity.Enum.NotificationType;
+import psg.facilitei.Entity.Enum.AccountStatus;
 import psg.facilitei.Exceptions.ResourceNotFoundException;
 import psg.facilitei.Repository.SolicitacaoServicoRepository;
 import psg.facilitei.Repository.TrabalhadorRepository;
@@ -59,6 +60,9 @@ public class SolicitacaoServicoService {
         // 2. Busca e define o Trabalhador (Obrigatório nesta etapa)
         Trabalhador trabalhador = trabalhadorRepository.findById(dto.getTrabalhadorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Trabalhador não encontrado com ID: " + dto.getTrabalhadorId()));
+        if (trabalhador.getAccountStatus() == AccountStatus.SUSPENDED) {
+            throw new BusinessRuleException("Este profissional não está disponível para novas solicitações.");
+        }
         if (paymentEnvironmentGuard.isCheckoutEnabled()
                 && !assinaturaPrestadorRepository.existsByTrabalhadorIdAndStatusAndActiveUntilAfter(
                         trabalhador.getId(), "ACTIVE", java.time.Instant.now())) {

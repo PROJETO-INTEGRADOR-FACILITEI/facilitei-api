@@ -10,10 +10,12 @@ import psg.facilitei.DTO.SolicitacaoServicoRequestDTO;
 import psg.facilitei.DTO.SolicitacaoServicoResponseDTO;
 import psg.facilitei.Entity.Cliente;
 import psg.facilitei.Entity.Enum.StatusSolicitacao;
+import psg.facilitei.Entity.Enum.AccountStatus;
 import psg.facilitei.Entity.Enum.TipoServico;
 import psg.facilitei.Entity.SolicitacaoServico;
 import psg.facilitei.Entity.Trabalhador;
 import psg.facilitei.Exceptions.ResourceNotFoundException;
+import psg.facilitei.Exceptions.BusinessRuleException;
 import psg.facilitei.Repository.SolicitacaoServicoRepository;
 import psg.facilitei.Repository.TrabalhadorRepository;
 
@@ -87,6 +89,23 @@ class SolicitacaoServicoServiceTest {
         when(trabalhadorRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> solicitacaoServicoService.criar(dto));
+    }
+
+    @Test
+    void criar_paraTrabalhadorSuspenso_rejeitaSolicitacao() {
+        SolicitacaoServicoRequestDTO dto = new SolicitacaoServicoRequestDTO();
+        dto.setClienteId(1L);
+        dto.setTrabalhadorId(2L);
+
+        Cliente cliente = new Cliente();
+        cliente.setId(1L);
+        Trabalhador trabalhador = new Trabalhador();
+        trabalhador.setId(2L);
+        trabalhador.setAccountStatus(AccountStatus.SUSPENDED);
+        when(clienteService.buscarEntidadePorId(1L)).thenReturn(cliente);
+        when(trabalhadorRepository.findById(2L)).thenReturn(Optional.of(trabalhador));
+
+        assertThrows(BusinessRuleException.class, () -> solicitacaoServicoService.criar(dto));
     }
 
     @Test

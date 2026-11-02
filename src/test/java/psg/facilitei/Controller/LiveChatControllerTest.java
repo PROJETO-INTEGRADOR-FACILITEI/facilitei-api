@@ -12,6 +12,8 @@ import psg.facilitei.Entity.Mensagem;
 import psg.facilitei.Repository.MensagemRepository;
 import psg.facilitei.Repository.ServicoRepository;
 import psg.facilitei.Services.NotificationService;
+import psg.facilitei.Services.LegalAcceptanceService;
+import psg.facilitei.Exceptions.BusinessRuleException;
 import psg.facilitei.Entity.Servico;
 import psg.facilitei.Entity.Cliente;
 import psg.facilitei.Entity.Trabalhador;
@@ -23,6 +25,7 @@ import java.security.Principal;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -39,6 +42,8 @@ class LiveChatControllerTest {
     private ServicoRepository servicoRepository;
     @Mock
     private NotificationService notificationService;
+    @Mock
+    private LegalAcceptanceService legalAcceptances;
 
     @InjectMocks
     private LiveChatController liveChatController;
@@ -52,6 +57,7 @@ class LiveChatControllerTest {
         Principal principal = () -> "cliente1";
         when(access.fromPrincipal(principal))
                 .thenReturn(new AuthenticatedPrincipal(1L, "cliente", "cliente1"));
+        when(legalAcceptances.hasCurrentGlobalAcceptance(1L, "cliente")).thenReturn(true);
         Cliente cliente = new Cliente();
         cliente.setId(1L);
         Trabalhador trabalhador = new Trabalhador();
@@ -70,6 +76,18 @@ class LiveChatControllerTest {
         assertEquals("Olá, tudo bem?", captor.getValue().getConteudo());
         assertEquals("TEXTO", captor.getValue().getTipo());
         assertEquals(42L, result.getServicoId());
+    }
+
+    @Test
+    void sendMessage_semAceiteJuridicoVigente_rejeitaAntesDePersistir() {
+        ChatInput input = new ChatInput(42L, "cliente1", "Olá", "TEXTO", null);
+        Principal principal = () -> "cliente1";
+        when(access.fromPrincipal(principal))
+                .thenReturn(new AuthenticatedPrincipal(1L, "cliente", "cliente1"));
+        when(legalAcceptances.hasCurrentGlobalAcceptance(1L, "cliente")).thenReturn(false);
+
+        assertThrows(BusinessRuleException.class,
+                () -> liveChatController.sendMessage(42L, input, principal));
     }
 
     @Test

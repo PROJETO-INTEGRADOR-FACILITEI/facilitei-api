@@ -16,6 +16,7 @@ import psg.facilitei.Entity.Servico;
 import psg.facilitei.Entity.AvaliacaoServico;
 import psg.facilitei.Entity.Trabalhador;
 import psg.facilitei.Entity.Enum.StatusServico;
+import psg.facilitei.Entity.Enum.AccountStatus;
 import psg.facilitei.Entity.Enum.TipoServico;
 import psg.facilitei.Repository.ClienteRepository;
 import psg.facilitei.Repository.ServicoRepository;
@@ -24,6 +25,8 @@ import psg.facilitei.Repository.TrabalhadorRepository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import jakarta.persistence.EntityNotFoundException;
 
 @DataJpaTest
 @ActiveProfiles("test")
@@ -135,6 +138,22 @@ class TrabalhadorServiceListagemTest {
         assertEquals(2, resultado.totalPages());
         assertEquals(1, resultado.content().size());
         assertFalse(resultado.last());
+    }
+
+    @Test
+    void listagensPublicasOcultamProfissionalSuspenso() {
+        repository.save(trabalhador("Ativo", "ativo@example.com", "Recife", 4.5,
+                List.of(TipoServico.DIARISTA)));
+        Trabalhador suspenso = trabalhador("Suspenso", "suspenso@example.com", "Recife", 5.0,
+                List.of(TipoServico.PEDREIRO));
+        suspenso.setAccountStatus(AccountStatus.SUSPENDED);
+        repository.save(suspenso);
+        repository.flush();
+
+        assertEquals(List.of("Ativo"), service.findAll().stream().map(value -> value.getNome()).toList());
+        assertEquals(List.of("Ativo"), service.findAllPaginado(0, 12, null, null, List.of(), 0.0)
+                .content().stream().map(value -> value.getNome()).toList());
+        assertThrows(EntityNotFoundException.class, () -> service.findById(suspenso.getId()));
     }
 
     private Trabalhador trabalhador(String nome, String email, String cidade, double nota,

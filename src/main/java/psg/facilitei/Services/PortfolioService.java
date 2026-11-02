@@ -12,6 +12,7 @@ import psg.facilitei.Entity.Portfolio;
 import psg.facilitei.Entity.PortfolioImagem;
 import psg.facilitei.Entity.Trabalhador;
 import psg.facilitei.Entity.Enum.TipoServico;
+import psg.facilitei.Entity.Enum.AccountStatus;
 import psg.facilitei.Exceptions.BusinessRuleException;
 import psg.facilitei.Exceptions.ResourceNotFoundException;
 import psg.facilitei.Repository.PortfolioRepository;
@@ -49,6 +50,7 @@ public class PortfolioService {
 
     public PortfolioResponseDTO buscarPorId(Long id) {
         Portfolio portfolio = buscarEntidadePorId(id);
+        requirePublicWorker(portfolio);
         return toResponseDTO(portfolio);
     }
 
@@ -61,6 +63,7 @@ public class PortfolioService {
         Portfolio portfolio = portfolioRepository.findByTrabalhadorId(trabalhadorId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Portfolio não encontrado para o trabalhador com ID: " + trabalhadorId));
+        requirePublicWorker(portfolio);
         return toResponseDTO(portfolio);
     }
 
@@ -134,5 +137,12 @@ public class PortfolioService {
             dto.setTrabalhadorId(portfolio.getTrabalhador().getId());
         }
         return dto;
+    }
+
+    private void requirePublicWorker(Portfolio portfolio) {
+        if (portfolio.getTrabalhador() == null
+                || portfolio.getTrabalhador().getAccountStatus() != AccountStatus.ACTIVE) {
+            throw new ResourceNotFoundException("Portfolio não encontrado.");
+        }
     }
 }

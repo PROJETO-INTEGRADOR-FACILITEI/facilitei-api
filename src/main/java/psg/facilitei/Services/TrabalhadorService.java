@@ -22,6 +22,7 @@ import psg.facilitei.Entity.Endereco;
 import psg.facilitei.Entity.Servico;
 import psg.facilitei.Entity.Trabalhador;
 import psg.facilitei.Entity.Enum.TipoServico;
+import psg.facilitei.Entity.Enum.AccountStatus;
 import psg.facilitei.Repository.AvaliacaoClienteRepository;
 import psg.facilitei.Repository.AvaliacaoServicoRepository;
 import psg.facilitei.Repository.AssinaturaPrestadorRepository;
@@ -84,6 +85,7 @@ public class TrabalhadorService {
 
         Map<Long, List<ResumoAvaliacaoTipoServicoDTO>> resumos = buscarResumos(trabalhadores);
         return trabalhadores.stream()
+                .filter(trabalhador -> trabalhador.getAccountStatus() == AccountStatus.ACTIVE)
                 .map(trabalhador -> toResponseDTO(trabalhador, resumos.getOrDefault(trabalhador.getId(), List.of())))
                 .collect(Collectors.toList());
     }
@@ -93,6 +95,7 @@ public class TrabalhadorService {
             String localizacao, List<TipoServico> tiposServico, Double notaMinima) {
         Specification<Trabalhador> filtros = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("accountStatus"), AccountStatus.ACTIVE));
 
             if (assinaturaObrigatoria()) {
                 predicates.add(root.get("id").in(
@@ -185,6 +188,9 @@ public class TrabalhadorService {
     public TrabalhadorResponseDTO findById(Long id) {
         Trabalhador trabalhador = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Trabalhador não encontrado com ID: " + id));
+        if (trabalhador.getAccountStatus() != AccountStatus.ACTIVE) {
+            throw new EntityNotFoundException("Trabalhador não encontrado com ID: " + id);
+        }
 
         return toResponseDTO(trabalhador);
     }

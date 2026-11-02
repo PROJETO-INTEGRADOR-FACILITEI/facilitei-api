@@ -30,6 +30,7 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http,
                                             SessionAuthenticationFilter sessionAuthenticationFilter,
+                                            LegalAcceptanceEnforcementFilter legalAcceptanceFilter,
                                             SensitiveEndpointRateLimitFilter rateLimitFilter) throws Exception {
         CookieCsrfTokenRepository csrfRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
         csrfRepository.setCookiePath("/");
@@ -88,6 +89,7 @@ public class SecurityConfig {
                         }))
                 .addFilterBefore(rateLimitFilter, AnonymousAuthenticationFilter.class)
                 .addFilterBefore(sessionAuthenticationFilter, AnonymousAuthenticationFilter.class)
+                .addFilterAfter(legalAcceptanceFilter, SessionAuthenticationFilter.class)
                 .build();
     }
 
