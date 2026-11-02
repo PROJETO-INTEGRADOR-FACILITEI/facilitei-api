@@ -10,6 +10,7 @@ import psg.facilitei.Entity.Enum.SupportCategory;
 import psg.facilitei.Entity.Enum.SupportEventType;
 import psg.facilitei.Entity.Enum.SupportPriority;
 import psg.facilitei.Entity.Enum.SupportStatus;
+import psg.facilitei.Entity.Enum.AccountStatus;
 
 public final class SupportCaseDTOs {
     private SupportCaseDTOs() {}
@@ -33,6 +34,10 @@ public final class SupportCaseDTOs {
             Boolean assignToMe,
             Boolean unassign,
             @Size(max = 2000) String resolution) {}
+
+    public record AccountStatusRequest(
+            @NotNull Boolean suspended,
+            @NotBlank @Size(max = 2000) String reason) {}
 
     public record MessageResponse(
             Long id,
@@ -83,6 +88,7 @@ public final class SupportCaseDTOs {
             String reporterName,
             Long reportedUserId,
             String reportedUserName,
+            AccountStatus reportedUserAccountStatus,
             Long assignedAdminId,
             String assignedAdminName,
             List<String> evidenceUrls,
