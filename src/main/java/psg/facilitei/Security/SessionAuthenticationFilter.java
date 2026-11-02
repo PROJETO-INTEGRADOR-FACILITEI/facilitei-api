@@ -13,9 +13,17 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import psg.facilitei.Entity.Enum.AccountStatus;
+import psg.facilitei.Repository.UsuarioRepository;
 
 @Component
 public class SessionAuthenticationFilter extends OncePerRequestFilter {
+    private final UsuarioRepository users;
+
+    public SessionAuthenticationFilter(UsuarioRepository users) {
+        this.users = users;
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
@@ -27,6 +35,15 @@ public class SessionAuthenticationFilter extends OncePerRequestFilter {
             Object adminValue = session.getAttribute("auth.admin");
             if (roleValue instanceof String role && idValue instanceof Long id
                     && ("cliente".equals(role) || "trabalhador".equals(role))) {
+                boolean active = users.findById(id)
+                        .map(user -> user.getAccountStatus() != AccountStatus.SUSPENDED)
+                        .orElse(false);
+                if (!active) {
+                    session.invalidate();
+                    SecurityContextHolder.clearContext();
+                    filterChain.doFilter(request, response);
+                    return;
+                }
                 AuthenticatedPrincipal principal = new AuthenticatedPrincipal(
                         id, role, nameValue instanceof String name ? name : role + "#" + id);
                 List<SimpleGrantedAuthority> authorities = new ArrayList<>();
