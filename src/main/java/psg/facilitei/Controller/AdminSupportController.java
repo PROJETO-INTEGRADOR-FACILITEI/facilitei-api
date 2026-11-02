@@ -57,4 +57,11 @@ public class AdminSupportController {
     public DetailResponse message(@PathVariable Long id, @Valid @RequestBody MessageRequest request) {
         return support.addAdminMessage(id, access.current().id(), request);
     }
+
+    @PatchMapping("/cases/{id}/reported-user-status")
+    public DetailResponse reportedUserStatus(@PathVariable Long id,
+                                             @Valid @RequestBody AccountStatusRequest request) {
+        return support.updateReportedUserStatus(
+                id, access.current().id(), request.suspended(), request.reason());
+    }
 }

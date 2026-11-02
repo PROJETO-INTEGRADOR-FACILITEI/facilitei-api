@@ -1,6 +1,8 @@
 package psg.facilitei.Services;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -19,6 +21,7 @@ import psg.facilitei.Entity.Trabalhador;
 import psg.facilitei.Entity.Usuario;
 import psg.facilitei.Entity.Enum.SupportCaseType;
 import psg.facilitei.Entity.Enum.SupportCategory;
+import psg.facilitei.Entity.Enum.AccountStatus;
 import psg.facilitei.Entity.Enum.SupportStatus;
 import psg.facilitei.Exceptions.BusinessRuleException;
 import psg.facilitei.Repository.ClienteRepository;
@@ -92,6 +95,49 @@ class SupportCaseServiceTest {
 
         assertThrows(BusinessRuleException.class, () -> service.updateAdmin(4L, 9L,
                 new AdminUpdateRequest(SupportStatus.RESOLVIDO, null, null, null, " ")));
+    }
+
+    @Test
+    void administradorSuspendeUsuarioReportadoComMotivoAuditavel() {
+        Usuario reporter = user(1L);
+        Usuario reported = user(2L);
+        reported.setEmail("reportado@example.com");
+        SupportCase supportCase = new SupportCase();
+        supportCase.setId(4L);
+        supportCase.setReporter(reporter);
+        supportCase.setReportedUser(reported);
+        supportCase.setStatus(SupportStatus.EM_ANALISE);
+        Usuario admin = user(9L);
+        admin.setEmail("admin@example.com");
+        when(cases.findById(4L)).thenReturn(Optional.of(supportCase));
+        when(users.findById(9L)).thenReturn(Optional.of(admin));
+        when(adminAccess.isAdminEmail(reported.getEmail())).thenReturn(false);
+
+        var detail = service.updateReportedUserStatus(
+                4L, 9L, true, "Fraude confirmada após análise das evidências.");
+
+        assertEquals(AccountStatus.SUSPENDED, reported.getAccountStatus());
+        assertNotNull(reported.getSuspendedAt());
+        assertEquals("Fraude confirmada após análise das evidências.", reported.getSuspensionReason());
+        assertEquals(AccountStatus.SUSPENDED, detail.reportedUserAccountStatus());
+    }
+
+    @Test
+    void administradorNaoPodeSuspenderOutraContaAdministrativa() {
+        Usuario reporter = user(1L);
+        Usuario reportedAdmin = user(2L);
+        reportedAdmin.setEmail("outro-admin@example.com");
+        SupportCase supportCase = new SupportCase();
+        supportCase.setId(5L);
+        supportCase.setReporter(reporter);
+        supportCase.setReportedUser(reportedAdmin);
+        Usuario actor = user(9L);
+        when(cases.findById(5L)).thenReturn(Optional.of(supportCase));
+        when(users.findById(9L)).thenReturn(Optional.of(actor));
+        when(adminAccess.isAdminEmail(reportedAdmin.getEmail())).thenReturn(true);
+
+        assertThrows(BusinessRuleException.class, () -> service.updateReportedUserStatus(
+                5L, 9L, true, "Tentativa indevida."));
     }
 
     private Usuario user(Long id) {

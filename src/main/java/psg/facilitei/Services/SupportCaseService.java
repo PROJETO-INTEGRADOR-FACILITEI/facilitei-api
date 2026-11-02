@@ -23,6 +23,7 @@ import psg.facilitei.Entity.SupportMessage;
 import psg.facilitei.Entity.Usuario;
 import psg.facilitei.Entity.Enum.NotificationType;
 import psg.facilitei.Entity.Enum.SupportCaseType;
+import psg.facilitei.Entity.Enum.AccountStatus;
 import psg.facilitei.Entity.Enum.SupportCategory;
 import psg.facilitei.Entity.Enum.SupportEventType;
 import psg.facilitei.Entity.Enum.SupportPriority;
@@ -236,6 +237,50 @@ public class SupportCaseService {
         return toDetail(supportCase, true);
     }
 
+    @Transactional
+    public DetailResponse updateReportedUserStatus(Long caseId, Long adminId,
+                                                   boolean suspended, String reasonValue) {
+        SupportCase supportCase = getCase(caseId);
+        Usuario admin = getUser(adminId);
+        Usuario reportedUser = supportCase.getReportedUser();
+        if (reportedUser == null) {
+            throw new BusinessRuleException("Este atendimento não possui uma conta reportada.");
+        }
+        if (reportedUser.getId().equals(adminId)) {
+            throw new BusinessRuleException("Você não pode alterar o estado da própria conta.");
+        }
+        if (adminAccess.isAdminEmail(reportedUser.getEmail())) {
+            throw new BusinessRuleException("Contas administrativas não podem ser suspensas por um atendimento.");
+        }
+
+        String reason = cleanNullable(reasonValue, 2000);
+        if (reason == null) {
+            throw new BusinessRuleException("Informe a justificativa da decisão administrativa.");
+        }
+
+        Instant now = Instant.now();
+        SupportEventType eventType;
+        String eventDescription;
+        if (suspended) {
+            reportedUser.setAccountStatus(AccountStatus.SUSPENDED);
+            reportedUser.setSuspendedAt(now);
+            reportedUser.setSuspensionReason(reason);
+            eventType = SupportEventType.USUARIO_SUSPENSO;
+            eventDescription = "Conta reportada suspensa: " + reason;
+        } else {
+            reportedUser.setAccountStatus(AccountStatus.ACTIVE);
+            reportedUser.setSuspendedAt(null);
+            reportedUser.setSuspensionReason(null);
+            eventType = SupportEventType.USUARIO_REATIVADO;
+            eventDescription = "Conta reportada reativada: " + reason;
+        }
+        users.save(reportedUser);
+        addHistory(supportCase, admin, eventType, eventDescription);
+        supportCase.setUpdatedAt(now);
+        cases.save(supportCase);
+        return toDetail(supportCase, true);
+    }
+
     @Transactional(readOnly = true)
     public AdminMetricsResponse metrics() {
         return new AdminMetricsResponse(
@@ -339,6 +384,7 @@ public class SupportCaseService {
                 id(supportCase.getService()), name(supportCase.getService()),
                 supportCase.getReporter().getId(), supportCase.getReporter().getNome(),
                 id(supportCase.getReportedUser()), name(supportCase.getReportedUser()),
+                supportCase.getReportedUser() == null ? null : supportCase.getReportedUser().getAccountStatus(),
                 id(supportCase.getAssignedAdmin()), name(supportCase.getAssignedAdmin()),
                 List.copyOf(supportCase.getEvidenceUrls()), supportCase.getResolution(),
                 supportCase.getCreatedAt(), supportCase.getUpdatedAt(), supportCase.getClosedAt(),
