@@ -9,6 +9,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import psg.facilitei.Entity.Usuario;
+import psg.facilitei.Repository.UsuarioRepository;
 import psg.facilitei.Services.MercadoPagoWebhookVerifier;
 import psg.facilitei.Services.AssinaturaPrestadorService;
 
@@ -18,12 +20,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import java.util.UUID;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class SecurityIntegrationTest {
     @Autowired MockMvc mockMvc;
+    @Autowired UsuarioRepository users;
 
     @MockBean MercadoPagoWebhookVerifier webhookVerifier;
     @MockBean AssinaturaPrestadorService assinaturaService;
@@ -45,9 +49,10 @@ class SecurityIntegrationTest {
 
     @Test
     void clienteNaoPodeAcessarAssinaturaDeProfissional() throws Exception {
+        Long userId = activeUserId();
         mockMvc.perform(get("/api/assinaturas/prestador")
                         .sessionAttr("auth.role", "cliente")
-                        .sessionAttr("auth.userId", 7L)
+                        .sessionAttr("auth.userId", userId)
                         .sessionAttr("auth.name", "Cliente"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").doesNotExist());
@@ -55,9 +60,10 @@ class SecurityIntegrationTest {
 
     @Test
     void usuarioComumNaoPodeAcessarPainelAdministrativo() throws Exception {
+        Long userId = activeUserId();
         mockMvc.perform(get("/api/admin/support/metrics")
                         .sessionAttr("auth.role", "cliente")
-                        .sessionAttr("auth.userId", 7L)
+                        .sessionAttr("auth.userId", userId)
                         .sessionAttr("auth.name", "Cliente")
                         .sessionAttr("auth.admin", false))
                 .andExpect(status().isForbidden());
@@ -65,9 +71,10 @@ class SecurityIntegrationTest {
 
     @Test
     void administradorPodeAcessarMetricasDeSuporte() throws Exception {
+        Long userId = activeUserId();
         mockMvc.perform(get("/api/admin/support/metrics")
                         .sessionAttr("auth.role", "cliente")
-                        .sessionAttr("auth.userId", 7L)
+                        .sessionAttr("auth.userId", userId)
                         .sessionAttr("auth.name", "Admin")
                         .sessionAttr("auth.admin", true))
                 .andExpect(status().isOk());
@@ -117,5 +124,13 @@ class SecurityIntegrationTest {
                         .contentType("application/json")
                         .content("{\"id\":\"notification-123\"}"))
                 .andExpect(status().isOk());
+    }
+
+    private Long activeUserId() {
+        Usuario user = new Usuario();
+        user.setNome("Usuário de segurança");
+        user.setEmail("security-" + UUID.randomUUID() + "@example.com");
+        user.setSenha("$2a$12$hash-de-teste");
+        return users.save(user).getId();
     }
 }
