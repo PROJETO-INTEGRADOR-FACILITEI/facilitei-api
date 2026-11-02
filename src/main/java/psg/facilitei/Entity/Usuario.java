@@ -1,11 +1,14 @@
 package psg.facilitei.Entity;
 
+import java.time.Instant;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor; 
 import lombok.Data;
 import lombok.NoArgsConstructor; 
 import lombok.EqualsAndHashCode; 
 import lombok.ToString; 
+import psg.facilitei.Entity.Enum.AccountStatus;
 
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
@@ -31,6 +34,16 @@ public class Usuario {
 
     @Column(name = "url_foto")
     private String urlFoto;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "account_status", nullable = false)
+    private AccountStatus accountStatus = AccountStatus.ACTIVE;
+
+    @Column(name = "suspended_at")
+    private Instant suspendedAt;
+
+    @Column(name = "suspension_reason", length = 2000)
+    private String suspensionReason;
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "endereco_id", referencedColumnName = "id")

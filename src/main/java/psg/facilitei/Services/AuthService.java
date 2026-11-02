@@ -10,6 +10,8 @@ import psg.facilitei.DTO.LoginResponseDTO;
 import psg.facilitei.DTO.TrabalhadorResponseDTO;
 import psg.facilitei.Entity.Cliente;
 import psg.facilitei.Entity.Trabalhador;
+import psg.facilitei.Entity.Usuario;
+import psg.facilitei.Entity.Enum.AccountStatus;
 import psg.facilitei.Repository.ClienteRepository;
 import psg.facilitei.Repository.TrabalhadorRepository;
 import psg.facilitei.Security.AdminAccessService;
@@ -39,6 +41,7 @@ public class AuthService {
         if (clienteOpt.isPresent()) {
             Cliente cliente = clienteOpt.get();
             if (passwordHashService.matches(senha, cliente.getSenha())) {
+                requireActive(cliente);
                 if (!passwordHashService.isHashed(cliente.getSenha())) {
                     cliente.setSenha(passwordHashService.hash(senha));
                     clienteRepository.save(cliente);
@@ -52,6 +55,7 @@ public class AuthService {
         if (trabalhadorOpt.isPresent()) {
             Trabalhador trabalhador = trabalhadorOpt.get();
             if (passwordHashService.matches(senha, trabalhador.getSenha())) {
+                requireActive(trabalhador);
                 if (!passwordHashService.isHashed(trabalhador.getSenha())) {
                     trabalhador.setSenha(passwordHashService.hash(senha));
                     trabalhadorRepository.save(trabalhador);
@@ -74,6 +78,7 @@ public class AuthService {
         if ("cliente".equals(role)) {
             Cliente cliente = clienteRepository.findById(userId)
                     .orElseThrow(this::sessaoInvalida);
+            requireActive(cliente);
             return new LoginResponseDTO(
                     "cliente", modelMapper.map(cliente, ClienteResponseDTO.class),
                     adminAccess.isAdminEmail(cliente.getEmail()));
@@ -81,6 +86,7 @@ public class AuthService {
         if ("trabalhador".equals(role)) {
             Trabalhador trabalhador = trabalhadorRepository.findById(userId)
                     .orElseThrow(this::sessaoInvalida);
+            requireActive(trabalhador);
             return new LoginResponseDTO(
                     "trabalhador", modelMapper.map(trabalhador, TrabalhadorResponseDTO.class),
                     adminAccess.isAdminEmail(trabalhador.getEmail()));
@@ -90,5 +96,12 @@ public class AuthService {
 
     private ResponseStatusException sessaoInvalida() {
         return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sessão inválida ou expirada.");
+    }
+
+    private void requireActive(Usuario usuario) {
+        if (usuario.getAccountStatus() == AccountStatus.SUSPENDED) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Conta suspensa. Entre em contato com o suporte.");
+        }
     }
 }
