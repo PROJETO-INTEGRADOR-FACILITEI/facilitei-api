@@ -56,6 +56,7 @@ public class SupportCaseService {
     private final TrabalhadorRepository workers;
     private final AdminAccessService adminAccess;
     private final NotificationService notifications;
+    private final EmailService emails;
 
     public SupportCaseService(SupportCaseRepository cases,
                               SupportMessageRepository messages,
@@ -65,7 +66,8 @@ public class SupportCaseService {
                               ClienteRepository clients,
                               TrabalhadorRepository workers,
                               AdminAccessService adminAccess,
-                              NotificationService notifications) {
+                              NotificationService notifications,
+                              EmailService emails) {
         this.cases = cases;
         this.messages = messages;
         this.history = history;
@@ -75,6 +77,7 @@ public class SupportCaseService {
         this.workers = workers;
         this.adminAccess = adminAccess;
         this.notifications = notifications;
+        this.emails = emails;
     }
 
     @Transactional
@@ -285,6 +288,12 @@ public class SupportCaseService {
         addHistory(supportCase, admin, eventType, eventDescription);
         supportCase.setUpdatedAt(now);
         cases.save(supportCase);
+        notifications.notify(
+                reportedUser.getId(), NotificationType.SUPPORT_UPDATE,
+                suspended ? "Sua conta foi suspensa" : "Sua conta foi reativada",
+                reason,
+                "/suporte");
+        emails.enviarEmailDecisaoConta(reportedUser.getEmail(), suspended, reason);
         return toDetail(supportCase, true);
     }
 

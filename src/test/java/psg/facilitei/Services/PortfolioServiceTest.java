@@ -12,6 +12,8 @@ import psg.facilitei.Entity.Portfolio;
 import psg.facilitei.Entity.PortfolioImagem;
 import psg.facilitei.Entity.Trabalhador;
 import psg.facilitei.Entity.Enum.TipoServico;
+import psg.facilitei.Entity.Enum.AccountStatus;
+import psg.facilitei.Exceptions.ResourceNotFoundException;
 import psg.facilitei.Exceptions.BusinessRuleException;
 import psg.facilitei.Repository.PortfolioRepository;
 
@@ -94,5 +96,19 @@ class PortfolioServiceTest {
         assertEquals(0, portfolio.getImagens().size());
         verify(storageService).delete("facilitei/portfolios/servico");
         verify(portfolioRepository).save(portfolio);
+    }
+
+    @Test
+    void buscarPortfolioDeProfissionalSuspenso_ocultaConteudo() {
+        Trabalhador suspenso = new Trabalhador();
+        suspenso.setId(7L);
+        suspenso.setAccountStatus(AccountStatus.SUSPENDED);
+        Portfolio portfolio = new Portfolio();
+        portfolio.setId(3L);
+        portfolio.setTrabalhador(suspenso);
+        when(portfolioRepository.findByTrabalhadorId(7L)).thenReturn(Optional.of(portfolio));
+
+        assertThrows(ResourceNotFoundException.class,
+                () -> portfolioService.buscarPorTrabalhador(7L));
     }
 }

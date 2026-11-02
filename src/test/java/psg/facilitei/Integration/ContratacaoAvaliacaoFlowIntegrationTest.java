@@ -10,11 +10,17 @@ import org.springframework.test.web.servlet.MockMvc;
 import psg.facilitei.DTO.AvaliacaoServicoRequestDTO;
 import psg.facilitei.DTO.ServicoRequestDTO;
 import psg.facilitei.DTO.SolicitacaoServicoRequestDTO;
+import psg.facilitei.DTO.LegalAcceptanceRequestDTO;
+import psg.facilitei.Domain.LegalDocumentType;
 import psg.facilitei.Entity.Cliente;
 import psg.facilitei.Entity.Enum.TipoServico;
 import psg.facilitei.Entity.Trabalhador;
 import psg.facilitei.Repository.ClienteRepository;
 import psg.facilitei.Repository.TrabalhadorRepository;
+import psg.facilitei.Services.LegalAcceptanceService;
+import psg.facilitei.Services.LegalDocumentService;
+
+import java.util.List;
 
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -36,6 +42,10 @@ class ContratacaoAvaliacaoFlowIntegrationTest {
     private ClienteRepository clienteRepository;
     @Autowired
     private TrabalhadorRepository trabalhadorRepository;
+    @Autowired
+    private LegalAcceptanceService legalAcceptances;
+    @Autowired
+    private LegalDocumentService legalDocuments;
 
     @Test
     void fluxoCompleto_criarServicoEAvaliar() throws Exception {
@@ -51,6 +61,8 @@ class ContratacaoAvaliacaoFlowIntegrationTest {
         trabalhador.setEmail("trabalhador.integ@teste.com");
         trabalhador.setSenha("123456");
         trabalhador = trabalhadorRepository.save(trabalhador);
+        registrarAceite(cliente.getId(), "cliente");
+        registrarAceite(trabalhador.getId(), "trabalhador");
 
         SolicitacaoServicoRequestDTO solicitacaoDto = new SolicitacaoServicoRequestDTO();
         solicitacaoDto.setClienteId(cliente.getId());
@@ -135,5 +147,17 @@ class ContratacaoAvaliacaoFlowIntegrationTest {
         mockMvc.perform(get("/api/trabalhadores/buscarPorId/" + trabalhador.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.notaTrabalhador", is(5.0)));
+    }
+
+    private void registrarAceite(Long userId, String role) {
+        var terms = legalDocuments.document(LegalDocumentType.TERMS);
+        var privacy = legalDocuments.document(LegalDocumentType.PRIVACY);
+        legalAcceptances.accept(userId, role, "REGISTRATION",
+                new LegalAcceptanceRequestDTO(true, List.of(
+                        new LegalAcceptanceRequestDTO.DocumentAcceptance(
+                                LegalDocumentType.TERMS, terms.version(), terms.sha256()),
+                        new LegalAcceptanceRequestDTO.DocumentAcceptance(
+                                LegalDocumentType.PRIVACY, privacy.version(), privacy.sha256()))),
+                "127.0.0.1", "integration-test");
     }
 }
