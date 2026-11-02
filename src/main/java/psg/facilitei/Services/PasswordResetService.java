@@ -28,6 +28,9 @@ public class PasswordResetService {
     @Autowired
     private PasswordHashService passwordHashService;
 
+    @Autowired
+    private PasswordPolicyService passwordPolicyService;
+
     @Value("${app.reset-password-url}")
     private String resetPasswordUrl;
 
@@ -65,6 +68,7 @@ public class PasswordResetService {
         Usuario usuario = usuarioRepository.findById(resetToken.getUsuarioId())
                 .orElseThrow(() -> new BusinessRuleException("Usuário não encontrado."));
 
+        passwordPolicyService.validate(novaSenha);
         usuario.setSenha(passwordHashService.hash(novaSenha));
         usuarioRepository.save(usuario);
 

@@ -34,6 +34,9 @@ class TrabalhadorServiceListagemTest {
     private PasswordHashService passwordHashService;
 
     @MockBean
+    private PasswordPolicyService passwordPolicyService;
+
+    @MockBean
     private LegalAcceptanceService legalAcceptanceService;
 
     @MockBean

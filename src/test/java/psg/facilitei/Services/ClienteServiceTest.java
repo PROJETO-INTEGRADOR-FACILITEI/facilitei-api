@@ -2,10 +2,13 @@ package psg.facilitei.Services;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.modelmapper.ModelMapper;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import psg.facilitei.DTO.ClienteRequestDTO;
 import psg.facilitei.Exceptions.BusinessRuleException;
 import psg.facilitei.Exceptions.ResourceNotFoundException;
 import psg.facilitei.Repository.AvaliacaoClienteRepository;
@@ -34,6 +37,14 @@ class ClienteServiceTest {
     private ServicoRepository servicoRepository;
     @Mock
     private TrabalhadorService trabalhadorService;
+    @Mock
+    private ModelMapper modelMapper;
+    @Mock
+    private PasswordHashService passwordHashService;
+    @Mock
+    private LegalAcceptanceService legalAcceptanceService;
+    @Spy
+    private PasswordPolicyService passwordPolicyService = new PasswordPolicyService();
 
     @InjectMocks
     private ClienteService clienteService;
@@ -66,5 +77,14 @@ class ClienteServiceTest {
                 .when(repository).flush();
 
         assertThrows(BusinessRuleException.class, () -> clienteService.delete(1L));
+    }
+
+    @Test
+    void create_comSenhaComum_naoCriaCliente() {
+        ClienteRequestDTO dto = new ClienteRequestDTO();
+        dto.setSenha("senha12345678");
+
+        assertThrows(BusinessRuleException.class,
+                () -> clienteService.create(dto, "127.0.0.1", "test-agent"));
     }
 }

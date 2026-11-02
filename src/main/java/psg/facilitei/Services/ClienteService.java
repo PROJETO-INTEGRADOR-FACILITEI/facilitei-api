@@ -54,6 +54,9 @@ public class ClienteService {
     private PasswordHashService passwordHashService;
 
     @Autowired
+    private PasswordPolicyService passwordPolicyService;
+
+    @Autowired
     private LegalAcceptanceService legalAcceptanceService;
 
     private Logger logger = Logger.getLogger(ClienteService.class.getName());
@@ -62,6 +65,7 @@ public class ClienteService {
     @Transactional
     public ClienteResponseDTO create(ClienteRequestDTO dto, String remoteAddress, String userAgent) {
         logger.info("Criando cliente");
+        passwordPolicyService.validate(dto.getSenha());
         Cliente cliente = modelMapper.map(dto, Cliente.class);
         cliente.setNome(HtmlSanitizer.sanitize(cliente.getNome()));
         cliente.setSenha(passwordHashService.hash(dto.getSenha()));
@@ -174,6 +178,7 @@ public class ClienteService {
         if (dto.getNome() != null) clienteAntigo.setNome(HtmlSanitizer.sanitize(dto.getNome()));
         if (dto.getEmail() != null) clienteAntigo.setEmail(dto.getEmail());
         if (dto.getSenha() != null && !dto.getSenha().isBlank()) {
+            passwordPolicyService.validate(dto.getSenha());
             clienteAntigo.setSenha(passwordHashService.hash(dto.getSenha()));
         }
         if(dto.getTelefone() != null) clienteAntigo.setTelefone(dto.getTelefone());
