@@ -322,6 +322,14 @@ MYAPP_CORS_ALLOWED_ORIGINS=https://facilitei-front.vercel.app,https://facilitei.
 SESSION_COOKIE_SECURE=true
 ```
 
+O painel administrativo é habilitado por e-mail. Configure no serviço da API:
+
+```Bash
+APP_ADMIN_EMAILS=email-da-conta-cadastrada-no-facilitei
+```
+
+Para mais de um administrador, separe os e-mails por vírgula. Cada e-mail precisa pertencer a uma conta já cadastrada no Facilitei. Depois de alterar a variável, faça um novo deploy e peça que o administrador saia e entre novamente para a sessão receber `ROLE_ADMIN`. Nunca coloque e-mails administrativos diretamente no código ou no repositório.
+
 O front no Vercel encaminha `/api/*` para `https://facilitei.velika.com.br/api/*` (ver `vercel.json` do front), então para o navegador as chamadas são de mesma origem.
 
 Para acessar o banco de fora do Railway (ex.: DBeaver ou `mysqldump`), use o TCP proxy público do serviço MySQL (variável `MYSQL_PUBLIC_URL`). O banco não fica no domínio `facilitei.velika.com.br`: o proxy do Cloudflare só encaminha HTTP(S), não conexões MySQL.
