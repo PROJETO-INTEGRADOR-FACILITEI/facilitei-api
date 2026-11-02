@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
 
 import java.util.List;
 import java.util.Optional;
@@ -60,6 +61,26 @@ class SupportCaseServiceTest {
         assertThrows(BusinessRuleException.class, () -> service.create(1L,
                 new CreateRequest(SupportCaseType.DISPUTA, SupportCategory.QUALIDADE_SERVICO,
                         "Serviço incompleto", "O combinado não foi entregue.", null, null, List.of())));
+    }
+
+    @Test
+    void suporteGeralNaoExigeServicoNemUsuarioReportado() {
+        Usuario reporter = user(1L);
+        when(users.findById(1L)).thenReturn(Optional.of(reporter));
+        when(cases.save(any(SupportCase.class))).thenAnswer(invocation -> {
+            SupportCase saved = invocation.getArgument(0);
+            saved.setId(30L);
+            return saved;
+        });
+
+        var detail = service.create(1L,
+                new CreateRequest(SupportCaseType.SUPORTE, SupportCategory.CONTA_ACESSO,
+                        "Não consigo atualizar meus dados", "Preciso de ajuda com minha conta.",
+                        null, null, List.of()));
+
+        assertEquals(SupportCaseType.SUPORTE, detail.type());
+        assertEquals(30L, detail.id());
+        assertEquals(null, detail.reportedUserId());
     }
 
     @Test
