@@ -30,6 +30,4 @@ services:
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
       RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
       PASSWORD_MIGRATION_ENABLED: ${PASSWORD_MIGRATION_ENABLED:-true}
-    depends_on:
-      db:
-        condition: service_healthy
+      APP_ADMIN_EMAILS: ${APP_ADMIN_EMAILS:-}
