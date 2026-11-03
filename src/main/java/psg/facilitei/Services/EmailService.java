@@ -1,6 +1,6 @@
 package psg.facilitei.Services;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
@@ -9,11 +9,30 @@ import org.springframework.stereotype.Service;
 @Service
 public class EmailService {
 
-    @Autowired
-    private JavaMailSender mailSender;
+    private final JavaMailSender mailSender;
+    private final String from;
+
+    public EmailService(
+            JavaMailSender mailSender,
+            @Value("${spring.mail.from:}") String from,
+            @Value("${spring.mail.username:}") String username) {
+        this.mailSender = mailSender;
+        String configuredFrom = from == null ? "" : from.trim();
+        this.from = configuredFrom.isBlank()
+                ? (username == null ? "" : username.trim())
+                : configuredFrom;
+    }
+
+    private SimpleMailMessage novaMensagem() {
+        SimpleMailMessage message = new SimpleMailMessage();
+        if (!from.isBlank()) {
+            message.setFrom(from);
+        }
+        return message;
+    }
 
     public void enviarEmailRecuperacaoSenha(String destinatario, String linkRecuperacao) {
-        SimpleMailMessage message = new SimpleMailMessage();
+        SimpleMailMessage message = novaMensagem();
         message.setTo(destinatario);
         message.setSubject("Facilitei - Recuperação de senha");
         message.setText("Você solicitou a recuperação de senha. Acesse o link abaixo para criar uma nova senha:\n\n"
@@ -24,7 +43,7 @@ public class EmailService {
 
     @Async("notificationExecutor")
     public void enviarEmailDecisaoConta(String destinatario, boolean suspensa, String justificativa) {
-        SimpleMailMessage message = new SimpleMailMessage();
+        SimpleMailMessage message = novaMensagem();
         message.setTo(destinatario);
         message.setSubject(suspensa
                 ? "Facilitei - Decisão sobre sua conta"
