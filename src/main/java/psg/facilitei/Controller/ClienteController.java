@@ -93,7 +93,7 @@ public class ClienteController {
                         @ApiResponse(responseCode = "500", description = "Erro interno do servidor.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
         })
         public ResponseEntity<ClienteResponseDTO> editar(@PathVariable Long id,
-                        @Valid @RequestBody ClienteRequestDTO dto) {
+                        @Valid @RequestBody ClienteUpdateDTO dto) {
                 access.requireCliente(id);
                 logger.info("Editando cliente");
                 return clienteService.update(id, dto);
