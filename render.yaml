@@ -49,6 +49,8 @@ services:
         sync: false
       - key: MAIL_PASSWORD
         sync: false
+      - key: MAIL_FROM
+        value: contato@facilitei.online
 
       # Pagamentos Mercado Pago
       - key: LEGAL_OPERATOR_TYPE
