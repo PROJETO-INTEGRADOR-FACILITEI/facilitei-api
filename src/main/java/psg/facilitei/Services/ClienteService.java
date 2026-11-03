@@ -171,16 +171,12 @@ public class ClienteService {
     }
 
     // ===================== ATUALIZAÇÃO =====================
-    public ResponseEntity<ClienteResponseDTO> update(Long id, ClienteRequestDTO dto) {
+    public ResponseEntity<ClienteResponseDTO> update(Long id, ClienteUpdateDTO dto) {
         logger.info("Editando cliente com ID: " + id);
         Cliente clienteAntigo = buscarEntidadePorId(id);
 
         if (dto.getNome() != null) clienteAntigo.setNome(HtmlSanitizer.sanitize(dto.getNome()));
         if (dto.getEmail() != null) clienteAntigo.setEmail(dto.getEmail());
-        if (dto.getSenha() != null && !dto.getSenha().isBlank()) {
-            passwordPolicyService.validate(dto.getSenha());
-            clienteAntigo.setSenha(passwordHashService.hash(dto.getSenha()));
-        }
         if(dto.getTelefone() != null) clienteAntigo.setTelefone(dto.getTelefone());
         if (dto.getAvatarUrl() != null) clienteAntigo.setUrlFoto(dto.getAvatarUrl());
 
