@@ -22,7 +22,6 @@ public class SensitiveEndpointRateLimitFilter extends OncePerRequestFilter {
     private static final Rule UPLOAD_RULE = new Rule(30, Duration.ofHours(1));
 
     private static final Map<String, Rule> RULES = Map.of(
-            "/api/auth/login", new Rule(10, Duration.ofMinutes(15)),
             "/api/auth/forgot-password", new Rule(5, Duration.ofHours(1)),
             "/api/auth/reset-password", new Rule(10, Duration.ofHours(1)),
             "/api/clientes", new Rule(5, Duration.ofHours(1)),

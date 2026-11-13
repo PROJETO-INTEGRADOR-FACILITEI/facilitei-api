@@ -10,16 +10,26 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SensitiveEndpointRateLimitFilterTest {
     @Test
-    void bloqueiaLoginAposDezTentativasDoMesmoIp() throws Exception {
+    void naoLimitaTentativasDeLogin() throws Exception {
         SensitiveEndpointRateLimitFilter filter = new SensitiveEndpointRateLimitFilter(true);
         FilterChain chain = (request, response) -> {};
 
-        for (int tentativa = 0; tentativa < 10; tentativa++) {
+        for (int tentativa = 0; tentativa < 50; tentativa++) {
             MockHttpServletResponse response = executar(filter, chain, "/api/auth/login");
             assertTrue(response.getStatus() < 400);
         }
+    }
 
-        assertEquals(429, executar(filter, chain, "/api/auth/login").getStatus());
+    @Test
+    void bloqueiaForgotPasswordAposCincoTentativasDoMesmoIp() throws Exception {
+        SensitiveEndpointRateLimitFilter filter = new SensitiveEndpointRateLimitFilter(true);
+        FilterChain chain = (request, response) -> {};
+
+        for (int tentativa = 0; tentativa < 5; tentativa++) {
+            assertTrue(executar(filter, chain, "/api/auth/forgot-password").getStatus() < 400);
+        }
+
+        assertEquals(429, executar(filter, chain, "/api/auth/forgot-password").getStatus());
     }
 
     @Test
