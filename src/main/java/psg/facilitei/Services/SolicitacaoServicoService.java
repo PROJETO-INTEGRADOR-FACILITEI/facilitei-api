@@ -52,6 +52,12 @@ public class SolicitacaoServicoService {
     @Autowired
     private psg.facilitei.Repository.ServicoOferecidoRepository servicoOferecidoRepository;
 
+    @Autowired(required = false)
+    private psg.facilitei.Repository.AvaliacaoClienteRepository avaliacaoClienteRepository;
+
+    @Autowired(required = false)
+    private psg.facilitei.Repository.ServicoRepository servicoRepository;
+
     @Transactional
     public SolicitacaoServicoResponseDTO criar(SolicitacaoServicoRequestDTO dto) {
         SolicitacaoServico solicitacao = new SolicitacaoServico();
@@ -200,11 +206,7 @@ public class SolicitacaoServicoService {
             entity.getTipoServico(),
             entity.getDescricao(),
             entity.getStatusSolicitacao().name(),
-            new ClienteResumoDTO(
-                entity.getCliente().getId(),
-                entity.getCliente().getNome(),
-                entity.getCliente().getUrlFoto()
-            )
+            resumoCliente(entity.getCliente())
         );
         dto.setTitulo(entity.getTitulo());
         dto.setServicoOferecidoId(entity.getServicoOferecido() == null ? null : entity.getServicoOferecido().getId());
@@ -213,6 +215,29 @@ public class SolicitacaoServicoService {
         dto.setDataSolicitacao(entity.getDataSolicitacao());
         dto.setMotivoCancelamento(entity.getMotivoCancelamento());
         return dto;
+    }
+
+    /** Reputação do cliente para o profissional decidir se aceita o pedido. */
+    private ClienteResumoDTO resumoCliente(Cliente cliente) {
+        ClienteResumoDTO resumo = new ClienteResumoDTO(cliente.getId(), cliente.getNome(), cliente.getUrlFoto());
+        if (avaliacaoClienteRepository != null) {
+            var avaliacoes = avaliacaoClienteRepository.findByClienteId(cliente.getId());
+            resumo.setQuantidadeAvaliacoes((long) avaliacoes.size());
+            resumo.setNotaCliente(avaliacoes.isEmpty() ? null : avaliacoes.stream()
+                    .mapToInt(psg.facilitei.Entity.AvaliacaoCliente::getNota).average().orElse(0));
+            resumo.setAvaliacoesRecentes(avaliacoes.stream()
+                    .sorted(java.util.Comparator.comparing(psg.facilitei.Entity.AvaliacaoCliente::getData,
+                            java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
+                    .limit(3)
+                    .map(a -> new ClienteResumoDTO.AvaliacaoRecente(a.getNota(), a.getComentario(),
+                            a.getTrabalhador() == null ? null : a.getTrabalhador().getNome(), a.getData()))
+                    .toList());
+        }
+        if (servicoRepository != null) {
+            resumo.setServicosConcluidos(servicoRepository.countByClienteIdAndStatusServico(
+                    cliente.getId(), psg.facilitei.Entity.Enum.StatusServico.FINALIZADO));
+        }
+        return resumo;
     }
 
     private String formatarTipo(String value) {
