@@ -98,6 +98,17 @@ public class SolicitacaoServicoController {
         return ResponseEntity.ok(atualizada);
     }
 
+    public record CancelamentoRequest(@jakarta.validation.constraints.Size(max = 500) String motivo) {}
+
+    @PostMapping(value = "/{id}/cancelar", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Cliente cancela um pedido que ainda está em análise pelo profissional")
+    public ResponseEntity<SolicitacaoServicoResponseDTO> cancelar(@PathVariable Long id,
+            @RequestBody(required = false) @Valid CancelamentoRequest request) {
+        access.requireSolicitationClient(id);
+        return ResponseEntity.ok(solicitacaoServicoService.cancelarPeloCliente(
+                id, request == null ? null : request.motivo()));
+    }
+
     @DeleteMapping(value = "/{id}")
     @Operation(summary = "Deleta uma solicitação de serviço por ID", responses = {
             @ApiResponse(responseCode = "204", description = "Solicitação de serviço deletada com sucesso"),

@@ -37,6 +37,7 @@ public final class SupportCaseDTOs {
 
     public record AccountStatusRequest(
             @NotNull Boolean suspended,
+            Integer durationDays,
             @NotBlank @Size(max = 2000) String reason) {}
 
     public record MessageResponse(

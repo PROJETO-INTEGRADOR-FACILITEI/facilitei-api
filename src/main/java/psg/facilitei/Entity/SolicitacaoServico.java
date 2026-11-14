@@ -61,4 +61,17 @@ public class SolicitacaoServico {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private StatusSolicitacao statusSolicitacao;
+
+    /** Serviço personalizado do profissional escolhido pelo cliente (opcional). */
+    @ManyToOne
+    @JoinColumn(name = "servico_oferecido_id")
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    private ServicoOferecido servicoOferecido;
+
+    @Column(name = "titulo", length = 150)
+    private String titulo;
+
+    @Column(name = "motivo_cancelamento", length = 500)
+    private String motivoCancelamento;
 }

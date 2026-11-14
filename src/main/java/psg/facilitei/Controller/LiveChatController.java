@@ -40,6 +40,9 @@ public class LiveChatController {
     @Autowired
     private LegalAcceptanceService legalAcceptances;
 
+    @Autowired(required = false)
+    private psg.facilitei.Services.ChatPresenceRegistry presence;
+
     // 1. Endpoint para enviar mensagem via WebSocket
     // O cliente manda para: /app/chat/{servicoId}
     // O servidor distribui para quem ouve: /topics/chat/{servicoId}
@@ -61,7 +64,8 @@ public class LiveChatController {
         msg.setServicoId(servicoId);
         msg.setRemetente(actor.name());
         msg.setConteudo(psg.facilitei.Util.HtmlSanitizer.sanitize(input.message()));
-        msg.setTipo(input.type() != null ? input.type() : "TEXTO");
+        // RESUMO/SISTEMA são reservados para mensagens automáticas do Facilitei.
+        msg.setTipo("IMAGEM".equalsIgnoreCase(input.type()) ? "IMAGEM" : "TEXTO");
         msg.setUrlArquivo(input.fileUrl());
         msg.setDataEnvio(LocalDateTime.now());
         
@@ -73,9 +77,12 @@ public class LiveChatController {
         String preview = "IMAGEM".equalsIgnoreCase(saved.getTipo())
                 ? actor.name() + " enviou uma imagem."
                 : actor.name() + ": " + saved.getConteudo();
-        notificationService.notify(
-                recipientId, NotificationType.NEW_MESSAGE,
-                "Nova mensagem", preview, "/painel/chat/" + servicoId);
+        // Quem está com a conversa aberta já vê a mensagem: notifica só quem está fora do chat.
+        if (presence == null || !presence.isInChat(recipientId, servicoId)) {
+            notificationService.notify(
+                    recipientId, NotificationType.NEW_MESSAGE,
+                    "Nova mensagem", preview, "/painel/chat/" + servicoId);
+        }
         return saved;
     }
 

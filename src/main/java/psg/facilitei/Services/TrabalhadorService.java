@@ -43,6 +43,9 @@ import java.time.Instant;
 @Service
 public class TrabalhadorService {
 
+    @Autowired(required = false)
+    private psg.facilitei.Repository.UsuarioRepository usuarioRepository;
+
     @Autowired
     private TrabalhadorRepository repository;
     @Autowired
@@ -145,7 +148,15 @@ public class TrabalhadorService {
                 .orElseThrow(() -> new EntityNotFoundException("Trabalhador não encontrado com ID: " + id));
 
         if (dto.getNome() != null) trabalhador.setNome(HtmlSanitizer.sanitize(dto.getNome()));
-        if (dto.getEmail() != null) trabalhador.setEmail(dto.getEmail());
+        if (dto.getEmail() != null && !dto.getEmail().isBlank()) {
+            String email = dto.getEmail().trim();
+            if (!email.equalsIgnoreCase(trabalhador.getEmail())
+                    && usuarioRepository != null
+                    && usuarioRepository.existsByEmailIgnoreCaseAndIdNot(email, id)) {
+                throw new BusinessRuleException("Este e-mail já está em uso por outra conta.");
+            }
+            trabalhador.setEmail(email);
+        }
         if (dto.getDisponibilidade() != null) trabalhador.setDisponibilidade(dto.getDisponibilidade());
         if (dto.getSobre() != null) trabalhador.setSobre(HtmlSanitizer.sanitize(dto.getSobre()));
         if (dto.getTelefone() != null) trabalhador.setTelefone(dto.getTelefone());
@@ -155,6 +166,10 @@ public class TrabalhadorService {
 
         if (dto.getEndereco() != null) {
             Endereco endereco = trabalhador.getEndereco();
+            if (endereco == null) {
+                endereco = new Endereco();
+                trabalhador.setEndereco(endereco);
+            }
             endereco.setRua(dto.getEndereco().getRua());
             endereco.setNumero(dto.getEndereco().getNumero());
             endereco.setBairro(dto.getEndereco().getBairro());

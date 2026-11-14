@@ -45,6 +45,16 @@ public class ModelMapperConfig {
                                                                 context.getSource().getCliente().getNome(),
                                                                 context.getSource().getCliente().getUrlFoto());
 
+                Converter<Servico, String> servicoToTrabalhadorNomeConverter = context -> context.getSource() == null
+                                || context.getSource().getTrabalhador() == null
+                                                ? null
+                                                : context.getSource().getTrabalhador().getNome();
+
+                Converter<Servico, String> servicoToTrabalhadorAvatarConverter = context -> context.getSource() == null
+                                || context.getSource().getTrabalhador() == null
+                                                ? null
+                                                : context.getSource().getTrabalhador().getUrlFoto();
+
                 Converter<SolicitacaoServico, Long> solicitacaoToClienteIdConverter = context -> context
                                 .getSource() == null || context.getSource().getCliente() == null
                                                 ? null
@@ -77,6 +87,11 @@ public class ModelMapperConfig {
                                         mapper.using(servicoToClienteResumoConverter).map(source -> source,
                                                         ServicoResponseDTO::setCliente);
                                         mapper.map(Servico::getStatusServico, ServicoResponseDTO::setStatusServico);
+                                        mapper.map(Servico::getMotivoCancelamento, ServicoResponseDTO::setMotivoCancelamento);
+                                        mapper.using(servicoToTrabalhadorNomeConverter).map(source -> source,
+                                                        ServicoResponseDTO::setTrabalhadorNome);
+                                        mapper.using(servicoToTrabalhadorAvatarConverter).map(source -> source,
+                                                        ServicoResponseDTO::setTrabalhadorAvatarUrl);
                                 });
 
                 modelMapper.createTypeMap(SolicitacaoServico.class, SolicitacaoServicoResponseDTO.class)

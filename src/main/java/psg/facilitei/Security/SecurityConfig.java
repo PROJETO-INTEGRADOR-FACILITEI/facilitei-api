@@ -56,6 +56,7 @@ public class SecurityConfig {
                                 "/api/trabalhadores/listar/**",
                                 "/api/trabalhadores/buscarPorId/**",
                                 "/api/portfolios/**",
+                                "/api/servicos-oferecidos/trabalhador/**",
                                 "/api/avaliacoes-servico/trabalhador/**",
                                 "/api/legal/config",
                                 "/api/legal/documents/**",
@@ -66,7 +67,6 @@ public class SecurityConfig {
                                 "/api/auth/reset-password",
                                 "/api/clientes",
                                 "/api/trabalhadores",
-                                "/api/arquivos/upload",
                                 "/api/assinaturas/prestador/webhook").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/error").permitAll()

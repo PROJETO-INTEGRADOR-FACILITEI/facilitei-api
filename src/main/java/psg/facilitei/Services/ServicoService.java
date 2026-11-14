@@ -55,6 +55,21 @@ public class ServicoService {
     @Autowired
     private PaymentEnvironmentGuard paymentEnvironmentGuard;
 
+    @Autowired
+    private psg.facilitei.Repository.MensagemRepository mensagemRepository;
+
+    @Autowired(required = false)
+    private org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
+
+    private static final java.time.format.DateTimeFormatter DATA_RESUMO =
+            java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy 'às' HH:mm");
+
+    /** Status em que o cliente ainda pode cancelar o serviço. */
+    private static final java.util.Set<StatusServico> CANCELAVEIS_PELO_CLIENTE = java.util.EnumSet.of(
+            StatusServico.SOLICITADO, StatusServico.PENDENTE, StatusServico.EM_ANDAMENTO,
+            StatusServico.AGUARDANDO_CONTATO, StatusServico.EM_ANALISE, StatusServico.APROVADO,
+            StatusServico.PAUSADO);
+
     public List<ServicoResponseDTO> listarTodos() {
         return servicoRepository.findAll()
                 .stream()
@@ -100,6 +115,9 @@ public class ServicoService {
 
             validarSolicitacaoPendente(solicitacao, dto);
             servico.setSolicitacao(solicitacao);
+            if (solicitacao.getTitulo() != null && !solicitacao.getTitulo().isBlank()) {
+                servico.setTitulo(solicitacao.getTitulo());
+            }
         }
 
         if (servico.getStatusServico() == null) {
@@ -113,6 +131,7 @@ public class ServicoService {
             solicitacao.setStatusSolicitacao(StatusSolicitacao.ACEITA);
             solicitacaoServicoRepository.save(solicitacao);
         }
+        publicarResumoNoChat(salvo, solicitacao);
 
         notificationService.notify(
                 cliente.getId(), NotificationType.REQUEST_ACCEPTED,
@@ -121,6 +140,116 @@ public class ServicoService {
                 "/painel/chat/" + salvo.getId());
 
         return modelMapper.map(salvo, ServicoResponseDTO.class);
+    }
+
+    /**
+     * Primeira mensagem do chat: o resumo do pedido, para o profissional entender
+     * de cara o que o cliente precisa.
+     */
+    private void publicarResumoNoChat(Servico servico, SolicitacaoServico solicitacao) {
+        Cliente cliente = servico.getCliente();
+        StringBuilder resumo = new StringBuilder("Resumo do pedido\n");
+        resumo.append("Serviço: ").append(servico.getTitulo()).append('\n');
+        if (solicitacao != null && solicitacao.getServicoOferecido() != null
+                && solicitacao.getServicoOferecido().getPreco() != null) {
+            resumo.append("Preço anunciado: R$ ")
+                    .append(String.format(java.util.Locale.forLanguageTag("pt-BR"), "%,.2f",
+                            solicitacao.getServicoOferecido().getPreco()))
+                    .append('\n');
+        }
+        resumo.append("Categoria: ").append(formatarTipo(servico.getTipoServico().name())).append('\n');
+        resumo.append("Cliente: ").append(cliente.getNome()).append('\n');
+        if (cliente.getEndereco() != null) {
+            var e = cliente.getEndereco();
+            String local = java.util.stream.Stream.of(e.getBairro(), e.getCidade(), e.getEstado())
+                    .filter(v -> v != null && !v.isBlank())
+                    .collect(Collectors.joining(", "));
+            if (!local.isBlank()) resumo.append("Local: ").append(local).append('\n');
+        }
+        if (solicitacao != null && solicitacao.getDataSolicitacao() != null) {
+            resumo.append("Pedido feito em: ").append(DATA_RESUMO.format(solicitacao.getDataSolicitacao())).append('\n');
+        }
+        String descricao = solicitacao != null ? solicitacao.getDescricao() : servico.getDescricao();
+        resumo.append("\nO que o cliente precisa:\n").append(descricao);
+
+        psg.facilitei.Entity.Mensagem mensagem = new psg.facilitei.Entity.Mensagem();
+        mensagem.setServicoId(servico.getId());
+        mensagem.setRemetente("Facilitei");
+        mensagem.setTipo("RESUMO");
+        mensagem.setConteudo(resumo.toString());
+        mensagem.setDataEnvio(java.time.LocalDateTime.now());
+        mensagemRepository.save(mensagem);
+    }
+
+    private void publicarMensagemDoSistema(Long servicoId, String conteudo) {
+        psg.facilitei.Entity.Mensagem mensagem = new psg.facilitei.Entity.Mensagem();
+        mensagem.setServicoId(servicoId);
+        mensagem.setRemetente("Facilitei");
+        mensagem.setTipo("SISTEMA");
+        mensagem.setConteudo(conteudo);
+        mensagem.setDataEnvio(java.time.LocalDateTime.now());
+        psg.facilitei.Entity.Mensagem salva = mensagemRepository.save(mensagem);
+        if (messagingTemplate != null) {
+            messagingTemplate.convertAndSend("/topics/chat/" + servicoId, salva);
+        }
+    }
+
+    /** Cancelamento solicitado pelo cliente enquanto o serviço ainda não foi concluído. */
+    @Transactional
+    public ServicoResponseDTO cancelarPeloCliente(Long id, String motivoInformado) {
+        Servico servico = buscarEntidadePorId(id);
+        if (!CANCELAVEIS_PELO_CLIENTE.contains(servico.getStatusServico())) {
+            throw new BusinessRuleException(servico.getStatusServico() == StatusServico.PENDENTE_APROVACAO
+                    ? "O profissional já informou a conclusão. Aprove ou conteste o serviço, ou abra uma disputa."
+                    : "Este serviço não pode mais ser cancelado.");
+        }
+        String motivo = motivoInformado == null || motivoInformado.isBlank()
+                ? null : HtmlSanitizer.sanitize(motivoInformado.trim());
+        if (motivo == null) throw new BusinessRuleException("Informe o motivo do cancelamento.");
+        if (motivo.length() > 500) motivo = motivo.substring(0, 500);
+        cancelar(servico, motivo);
+        publicarMensagemDoSistema(servico.getId(), "O cliente cancelou o serviço. Motivo: " + motivo);
+        notificationService.notify(
+                servico.getTrabalhador().getId(), NotificationType.STATUS_CHANGED,
+                "Serviço cancelado pelo cliente",
+                servico.getCliente().getNome() + " cancelou “" + servico.getTitulo() + "”. Motivo: " + motivo,
+                "/painel");
+        return modelMapper.map(servico, ServicoResponseDTO.class);
+    }
+
+    /** Cancelamento administrativo, em qualquer etapa não encerrada. */
+    @Transactional
+    public ServicoResponseDTO cancelarPeloAdmin(Long id, String motivoInformado) {
+        Servico servico = buscarEntidadePorId(id);
+        if (!psg.facilitei.Services.AccountModerationService.OPEN_SERVICE.contains(servico.getStatusServico())) {
+            throw new BusinessRuleException("Este serviço já está encerrado.");
+        }
+        String motivo = HtmlSanitizer.sanitize(motivoInformado == null ? "" : motivoInformado.trim());
+        if (motivo.length() > 500) motivo = motivo.substring(0, 500);
+        cancelar(servico, motivo);
+        publicarMensagemDoSistema(servico.getId(), "A administração cancelou este serviço. Motivo: " + motivo);
+        for (Long destinatario : List.of(servico.getCliente().getId(), servico.getTrabalhador().getId())) {
+            notificationService.notify(destinatario, NotificationType.STATUS_CHANGED,
+                    "Serviço cancelado pela administração",
+                    "“" + servico.getTitulo() + "” foi cancelado. Motivo: " + motivo, "/painel");
+        }
+        return modelMapper.map(servico, ServicoResponseDTO.class);
+    }
+
+    private void cancelar(Servico servico, String motivo) {
+        servico.setStatusServico(StatusServico.CANCELADO);
+        servico.setMotivoCancelamento(motivo);
+        servicoRepository.save(servico);
+        solicitacaoServicoRepository.findByServicoId(servico.getId()).ifPresent(solicitacao -> {
+            solicitacao.setStatusSolicitacao(StatusSolicitacao.CANCELADA);
+            solicitacao.setMotivoCancelamento(motivo);
+            solicitacaoServicoRepository.save(solicitacao);
+        });
+    }
+
+    private static String formatarTipo(String value) {
+        String texto = value.toLowerCase().replace('_', ' ');
+        return Character.toUpperCase(texto.charAt(0)) + texto.substring(1);
     }
 
     private void validarSolicitacaoPendente(SolicitacaoServico solicitacao, ServicoRequestDTO dto) {

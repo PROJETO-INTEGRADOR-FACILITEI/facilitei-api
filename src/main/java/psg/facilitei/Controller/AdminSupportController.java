@@ -62,6 +62,6 @@ public class AdminSupportController {
     public DetailResponse reportedUserStatus(@PathVariable Long id,
                                              @Valid @RequestBody AccountStatusRequest request) {
         return support.updateReportedUserStatus(
-                id, access.current().id(), request.suspended(), request.reason());
+                id, access.current().id(), request.suspended(), request.durationDays(), request.reason());
     }
 }

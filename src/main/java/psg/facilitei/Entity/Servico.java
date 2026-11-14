@@ -65,5 +65,8 @@ public class Servico {
     @Column(name = "status_servico", nullable = false, length = 20)
     private StatusServico statusServico;
 
+    @Column(name = "motivo_cancelamento", length = 500)
+    private String motivoCancelamento;
+
     
 }

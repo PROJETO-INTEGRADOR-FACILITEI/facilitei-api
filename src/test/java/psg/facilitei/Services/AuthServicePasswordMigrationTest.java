@@ -65,7 +65,7 @@ class AuthServicePasswordMigrationTest {
                 () -> service.login(cliente.getEmail(), "senha-correta-123"));
 
         assertEquals(403, error.getStatusCode().value());
-        assertEquals("Conta suspensa. Entre em contato com o suporte.", error.getReason());
+        assertEquals("Sua conta está suspensa por tempo indeterminado.", error.getReason());
     }
 
     @Test

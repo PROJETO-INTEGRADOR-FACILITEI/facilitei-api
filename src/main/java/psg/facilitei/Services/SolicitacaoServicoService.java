@@ -49,6 +49,9 @@ public class SolicitacaoServicoService {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private psg.facilitei.Repository.ServicoOferecidoRepository servicoOferecidoRepository;
+
     @Transactional
     public SolicitacaoServicoResponseDTO criar(SolicitacaoServicoRequestDTO dto) {
         SolicitacaoServico solicitacao = new SolicitacaoServico();
@@ -60,7 +63,7 @@ public class SolicitacaoServicoService {
         // 2. Busca e define o Trabalhador (Obrigatório nesta etapa)
         Trabalhador trabalhador = trabalhadorRepository.findById(dto.getTrabalhadorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Trabalhador não encontrado com ID: " + dto.getTrabalhadorId()));
-        if (trabalhador.getAccountStatus() == AccountStatus.SUSPENDED) {
+        if (trabalhador.getAccountStatus() != AccountStatus.ACTIVE) {
             throw new BusinessRuleException("Este profissional não está disponível para novas solicitações.");
         }
         if (paymentEnvironmentGuard.isCheckoutEnabled()
@@ -73,6 +76,16 @@ public class SolicitacaoServicoService {
         // 3. Define dados da solicitação
         solicitacao.setDescricao(HtmlSanitizer.sanitize(dto.getDescricao()));
         solicitacao.setTipoServico(dto.getTipoServico());
+        if (dto.getServicoOferecidoId() != null) {
+            var oferecido = servicoOferecidoRepository
+                    .findByIdAndTrabalhadorId(dto.getServicoOferecidoId(), trabalhador.getId())
+                    .filter(psg.facilitei.Entity.ServicoOferecido::isAtivo)
+                    .orElseThrow(() -> new BusinessRuleException(
+                            "O serviço escolhido não está mais disponível com este profissional."));
+            solicitacao.setServicoOferecido(oferecido);
+            solicitacao.setTitulo(oferecido.getTitulo());
+            if (oferecido.getTipoServico() != null) solicitacao.setTipoServico(oferecido.getTipoServico());
+        }
         solicitacao.setDataSolicitacao(LocalDateTime.now());
         
         // 4. O serviço começa como NULL (será criado quando o trabalhador aceitar)
@@ -84,7 +97,9 @@ public class SolicitacaoServicoService {
         notificationService.notify(
                 trabalhador.getId(), NotificationType.NEW_REQUEST,
                 "Nova solicitação de serviço",
-                cliente.getNome() + " precisa de " + formatarTipo(solicitacao.getTipoServico().name()) + ".",
+                cliente.getNome() + " precisa de " + (solicitacao.getTitulo() != null
+                        ? "“" + solicitacao.getTitulo() + "”"
+                        : formatarTipo(solicitacao.getTipoServico().name())) + ".",
                 "/painel");
         
         // Mapeamento manual para garantir retorno correto dos IDs
@@ -142,6 +157,31 @@ public class SolicitacaoServicoService {
         return mapToResponse(atualizada);
     }
     
+    /** O cliente desiste do pedido enquanto o profissional ainda não respondeu. */
+    @Transactional
+    public SolicitacaoServicoResponseDTO cancelarPeloCliente(Long id, String motivoInformado) {
+        SolicitacaoServico solicitacao = solicitacaoServicoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Solicitação não encontrada ID: " + id));
+        if (solicitacao.getStatusSolicitacao() != StatusSolicitacao.PENDENTE) {
+            throw new BusinessRuleException(solicitacao.getServico() != null
+                    ? "O profissional já aceitou este pedido. Cancele o serviço pelo painel."
+                    : "Esta solicitação já foi encerrada.");
+        }
+        String motivo = motivoInformado == null || motivoInformado.isBlank()
+                ? null : HtmlSanitizer.sanitize(motivoInformado.trim());
+        if (motivo != null && motivo.length() > 500) motivo = motivo.substring(0, 500);
+        solicitacao.setStatusSolicitacao(StatusSolicitacao.CANCELADA);
+        solicitacao.setMotivoCancelamento(motivo);
+        SolicitacaoServico salva = solicitacaoServicoRepository.save(solicitacao);
+        notificationService.notify(
+                solicitacao.getTrabalhador().getId(), NotificationType.STATUS_CHANGED,
+                "Pedido cancelado pelo cliente",
+                solicitacao.getCliente().getNome() + " cancelou o pedido"
+                        + (motivo == null ? "." : ". Motivo: " + motivo),
+                "/painel");
+        return mapToResponse(salva);
+    }
+
     @Transactional
     public void deletar(Long id) {
         if (!solicitacaoServicoRepository.existsById(id)) {
@@ -152,7 +192,7 @@ public class SolicitacaoServicoService {
 
     // Helper para converter entidade para DTO
     private SolicitacaoServicoResponseDTO mapToResponse(SolicitacaoServico entity) {
-        return new SolicitacaoServicoResponseDTO(
+        SolicitacaoServicoResponseDTO dto = new SolicitacaoServicoResponseDTO(
             entity.getId(),
             entity.getCliente().getId(),
             entity.getTrabalhador().getId(),
@@ -166,6 +206,13 @@ public class SolicitacaoServicoService {
                 entity.getCliente().getUrlFoto()
             )
         );
+        dto.setTitulo(entity.getTitulo());
+        dto.setServicoOferecidoId(entity.getServicoOferecido() == null ? null : entity.getServicoOferecido().getId());
+        dto.setTrabalhadorNome(entity.getTrabalhador().getNome());
+        dto.setTrabalhadorAvatarUrl(entity.getTrabalhador().getUrlFoto());
+        dto.setDataSolicitacao(entity.getDataSolicitacao());
+        dto.setMotivoCancelamento(entity.getMotivoCancelamento());
+        return dto;
     }
 
     private String formatarTipo(String value) {

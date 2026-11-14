@@ -19,6 +19,7 @@ import psg.facilitei.Entity.Servico;
 import psg.facilitei.Entity.SolicitacaoServico;
 import psg.facilitei.Entity.Trabalhador;
 import psg.facilitei.Exceptions.ResourceNotFoundException;
+import psg.facilitei.Exceptions.BusinessRuleException;
 import psg.facilitei.Repository.AvaliacaoServicoRepository;
 import psg.facilitei.Repository.ClienteRepository;
 import psg.facilitei.Repository.ServicoRepository;
@@ -37,6 +38,9 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ServicoServiceTest {
+
+    @Mock
+    private psg.facilitei.Repository.MensagemRepository mensagemRepository;
 
     @Mock
     private ServicoRepository servicoRepository;
@@ -204,5 +208,84 @@ class ServicoServiceTest {
         List<ServicoResponseDTO> result = servicoService.listarPorCliente(2L);
 
         assertEquals(1, result.size());
+    }
+
+    private Servico servicoAberto(StatusServico status) {
+        Trabalhador trabalhador = new Trabalhador();
+        trabalhador.setId(1L);
+        trabalhador.setNome("Carlos");
+        Cliente cliente = new Cliente();
+        cliente.setId(2L);
+        cliente.setNome("Ana");
+        Servico servico = new Servico();
+        servico.setId(10L);
+        servico.setTitulo("Pintura de sala");
+        servico.setDescricao("Pintura completa");
+        servico.setTipoServico(TipoServico.PINTOR);
+        servico.setStatusServico(status);
+        servico.setTrabalhador(trabalhador);
+        servico.setCliente(cliente);
+        return servico;
+    }
+
+    @Test
+    void cancelarPeloCliente_emAndamento_cancelaEAvisaProfissional() {
+        Servico servico = servicoAberto(StatusServico.EM_ANDAMENTO);
+        when(servicoRepository.findById(10L)).thenReturn(Optional.of(servico));
+        when(solicitacaoServicoRepository.findByServicoId(10L)).thenReturn(Optional.empty());
+        when(mensagemRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        servicoService.cancelarPeloCliente(10L, "Resolvi de outra forma");
+
+        assertEquals(StatusServico.CANCELADO, servico.getStatusServico());
+        assertEquals("Resolvi de outra forma", servico.getMotivoCancelamento());
+        verify(notificationService).notify(org.mockito.ArgumentMatchers.eq(1L), any(), any(), any(), any());
+    }
+
+    @Test
+    void cancelarPeloCliente_aguardandoAprovacao_naoPermite() {
+        when(servicoRepository.findById(10L))
+                .thenReturn(Optional.of(servicoAberto(StatusServico.PENDENTE_APROVACAO)));
+
+        assertThrows(BusinessRuleException.class, () -> servicoService.cancelarPeloCliente(10L, "motivo"));
+    }
+
+    @Test
+    void cancelarPeloCliente_semMotivo_naoPermite() {
+        when(servicoRepository.findById(10L))
+                .thenReturn(Optional.of(servicoAberto(StatusServico.EM_ANDAMENTO)));
+
+        assertThrows(BusinessRuleException.class, () -> servicoService.cancelarPeloCliente(10L, " "));
+    }
+
+    @Test
+    void criar_publicaResumoDoPedidoComoPrimeiraMensagemDoChat() {
+        ServicoRequestDTO dto = new ServicoRequestDTO();
+        dto.setTitulo("Pintura de sala");
+        dto.setDescricao("Pintura completa");
+        dto.setTipoServico(TipoServico.PINTOR);
+        dto.setTrabalhadorId(1L);
+        dto.setClienteId(2L);
+        Trabalhador trabalhador = new Trabalhador();
+        trabalhador.setId(1L);
+        Cliente cliente = new Cliente();
+        cliente.setId(2L);
+        cliente.setNome("Ana");
+        when(trabalhadorService.buscarEntidadePorId(1L)).thenReturn(trabalhador);
+        when(clienteRepository.findById(2L)).thenReturn(Optional.of(cliente));
+        when(servicoRepository.save(any(Servico.class))).thenAnswer(invocation -> {
+            Servico salvo = invocation.getArgument(0);
+            salvo.setId(77L);
+            return salvo;
+        });
+
+        servicoService.criar(dto);
+
+        var captor = org.mockito.ArgumentCaptor.forClass(psg.facilitei.Entity.Mensagem.class);
+        verify(mensagemRepository).save(captor.capture());
+        assertEquals("RESUMO", captor.getValue().getTipo());
+        assertEquals(77L, captor.getValue().getServicoId());
+        org.junit.jupiter.api.Assertions.assertTrue(captor.getValue().getConteudo().contains("Pintura completa"));
+        org.junit.jupiter.api.Assertions.assertTrue(captor.getValue().getConteudo().contains("Ana"));
     }
 }

@@ -84,6 +84,18 @@ public class ServicoController {
         return ResponseEntity.noContent().build();
     }
 
+    public record CancelamentoRequest(@jakarta.validation.constraints.NotBlank(message = "Informe o motivo do cancelamento.")
+                                      @jakarta.validation.constraints.Size(max = 500) String motivo) {}
+
+    @PostMapping(value = "/{id}/cancelar", produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Cliente cancela um serviço que ainda não foi concluído")
+    public ResponseEntity<ServicoResponseDTO> cancelar(@PathVariable Long id,
+                                                       @Valid @RequestBody CancelamentoRequest request) {
+        access.requireServiceClient(id);
+        return ResponseEntity.ok(servicoService.cancelarPeloCliente(id, request.motivo()));
+    }
+
     @GetMapping("/por-cliente/{clienteId}")
     public ResponseEntity<List<ServicoResponseDTO>> listarPorCliente(@PathVariable Long clienteId) {
         access.requireCliente(clienteId);

@@ -30,4 +30,7 @@ public class SolicitacaoServicoRequestDTO {
     private String descricao;
 
     private StatusSolicitacao statusSolicitacao;
+
+    /** Serviço personalizado do profissional escolhido pelo cliente (opcional). */
+    private Long servicoOferecidoId;
 }

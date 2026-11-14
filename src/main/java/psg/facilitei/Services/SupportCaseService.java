@@ -250,6 +250,13 @@ public class SupportCaseService {
     @Transactional
     public DetailResponse updateReportedUserStatus(Long caseId, Long adminId,
                                                    boolean suspended, String reasonValue) {
+        return updateReportedUserStatus(caseId, adminId, suspended, null, reasonValue);
+    }
+
+    @Transactional
+    public DetailResponse updateReportedUserStatus(Long caseId, Long adminId,
+                                                   boolean suspended, Integer durationDays,
+                                                   String reasonValue) {
         SupportCase supportCase = getCase(caseId);
         Usuario admin = getUser(adminId);
         Usuario reportedUser = supportCase.getReportedUser();
@@ -272,14 +279,22 @@ public class SupportCaseService {
         SupportEventType eventType;
         String eventDescription;
         if (suspended) {
+            if (durationDays != null && (durationDays < 1 || durationDays > 3650)) {
+                throw new BusinessRuleException("A duração deve ser entre 1 e 3650 dias.");
+            }
             reportedUser.setAccountStatus(AccountStatus.SUSPENDED);
             reportedUser.setSuspendedAt(now);
+            reportedUser.setSuspendedUntil(durationDays == null ? null
+                    : now.plus(java.time.Duration.ofDays(durationDays)));
             reportedUser.setSuspensionReason(reason);
             eventType = SupportEventType.USUARIO_SUSPENSO;
-            eventDescription = "Conta reportada suspensa: " + reason;
+            eventDescription = "Conta reportada suspensa "
+                    + (durationDays == null ? "por tempo indeterminado" : "por " + durationDays + " dia(s)")
+                    + ": " + reason;
         } else {
             reportedUser.setAccountStatus(AccountStatus.ACTIVE);
             reportedUser.setSuspendedAt(null);
+            reportedUser.setSuspendedUntil(null);
             reportedUser.setSuspensionReason(null);
             eventType = SupportEventType.USUARIO_REATIVADO;
             eventDescription = "Conta reportada reativada: " + reason;
@@ -291,7 +306,7 @@ public class SupportCaseService {
         notifications.notify(
                 reportedUser.getId(), NotificationType.SUPPORT_UPDATE,
                 suspended ? "Sua conta foi suspensa" : "Sua conta foi reativada",
-                reason,
+                suspended ? AccountModerationService.describe(reportedUser) : reason,
                 "/suporte");
         emails.enviarEmailDecisaoConta(reportedUser.getEmail(), suspended, reason);
         return toDetail(supportCase, true);

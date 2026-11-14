@@ -39,4 +39,13 @@ public class ServicoResponseDTO {
 
     @Schema(description = "Resumo seguro do cliente associado ao serviço")
     private ClienteResumoDTO cliente;
+
+    @Schema(description = "Motivo do cancelamento, quando cancelado")
+    private String motivoCancelamento;
+
+    @Schema(description = "Nome do profissional responsável")
+    private String trabalhadorNome;
+
+    @Schema(description = "Foto do profissional responsável")
+    private String trabalhadorAvatarUrl;
 }

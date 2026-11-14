@@ -35,13 +35,24 @@ public class SessionAuthenticationFilter extends OncePerRequestFilter {
             Object adminValue = session.getAttribute("auth.admin");
             if (roleValue instanceof String role && idValue instanceof Long id
                     && ("cliente".equals(role) || "trabalhador".equals(role))) {
-                boolean active = users.findById(id)
-                        .map(user -> user.getAccountStatus() != AccountStatus.SUSPENDED)
-                        .orElse(false);
-                if (!active) {
+                var user = users.findById(id).orElse(null);
+                if (user == null) {
                     session.invalidate();
                     SecurityContextHolder.clearContext();
                     filterChain.doFilter(request, response);
+                    return;
+                }
+                if (user.isBlockedNow()) {
+                    // Mostra a punição (motivo e prazo) em vez de apenas derrubar a sessão.
+                    session.invalidate();
+                    SecurityContextHolder.clearContext();
+                    var body = psg.facilitei.Services.AccountModerationService.suspensionBody(
+                            psg.facilitei.Services.AccountModerationService.toException(user));
+                    response.setStatus(403);
+                    response.setContentType("application/json");
+                    response.setCharacterEncoding("UTF-8");
+                    response.getWriter().write(new com.fasterxml.jackson.databind.ObjectMapper()
+                            .writeValueAsString(body));
                     return;
                 }
                 AuthenticatedPrincipal principal = new AuthenticatedPrincipal(

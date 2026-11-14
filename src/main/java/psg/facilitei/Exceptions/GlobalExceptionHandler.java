@@ -34,6 +34,12 @@ public class GlobalExceptionHandler {
     }
 
 
+    @ExceptionHandler(AccountSuspendedException.class)
+    public ResponseEntity<java.util.Map<String, Object>> handleAccountSuspended(AccountSuspendedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(psg.facilitei.Services.AccountModerationService.suspensionBody(ex));
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponseDTO> handleNotFound(ResourceNotFoundException ex) {
         ErrorResponseDTO error = new ErrorResponseDTO(

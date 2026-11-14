@@ -29,6 +29,9 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @Service
 public class ClienteService {
 
+    @Autowired(required = false)
+    private psg.facilitei.Repository.UsuarioRepository usuarioRepository;
+
     @Autowired
     private ClienteRepository repository;
 
@@ -176,7 +179,15 @@ public class ClienteService {
         Cliente clienteAntigo = buscarEntidadePorId(id);
 
         if (dto.getNome() != null) clienteAntigo.setNome(HtmlSanitizer.sanitize(dto.getNome()));
-        if (dto.getEmail() != null) clienteAntigo.setEmail(dto.getEmail());
+        if (dto.getEmail() != null && !dto.getEmail().isBlank()) {
+            String email = dto.getEmail().trim();
+            if (!email.equalsIgnoreCase(clienteAntigo.getEmail())
+                    && usuarioRepository != null
+                    && usuarioRepository.existsByEmailIgnoreCaseAndIdNot(email, id)) {
+                throw new BusinessRuleException("Este e-mail já está em uso por outra conta.");
+            }
+            clienteAntigo.setEmail(email);
+        }
         if(dto.getTelefone() != null) clienteAntigo.setTelefone(dto.getTelefone());
         if (dto.getAvatarUrl() != null) clienteAntigo.setUrlFoto(dto.getAvatarUrl());
 

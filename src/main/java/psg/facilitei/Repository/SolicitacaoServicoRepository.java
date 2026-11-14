@@ -17,6 +17,8 @@ public interface SolicitacaoServicoRepository extends JpaRepository<SolicitacaoS
 
     List<SolicitacaoServico> findByTrabalhadorId(Long trabalhadorId);
 
+    List<SolicitacaoServico> findByClienteIdOrTrabalhadorId(Long clienteId, Long trabalhadorId);
+
     boolean existsByIdAndClienteId(Long id, Long clienteId);
 
     boolean existsByIdAndTrabalhadorId(Long id, Long trabalhadorId);

@@ -99,9 +99,15 @@ public class AuthService {
     }
 
     private void requireActive(Usuario usuario) {
-        if (usuario.getAccountStatus() == AccountStatus.SUSPENDED) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Conta suspensa. Entre em contato com o suporte.");
+        if (usuario.hasExpiredSuspension()) {
+            usuario.setAccountStatus(AccountStatus.ACTIVE);
+            usuario.setSuspendedAt(null);
+            usuario.setSuspendedUntil(null);
+            usuario.setSuspensionReason(null);
+            return;
+        }
+        if (usuario.isBlockedNow()) {
+            throw psg.facilitei.Services.AccountModerationService.toException(usuario);
         }
     }
 }

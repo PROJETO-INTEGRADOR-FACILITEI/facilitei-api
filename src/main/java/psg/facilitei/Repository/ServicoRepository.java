@@ -18,6 +18,11 @@ public interface ServicoRepository extends JpaRepository <Servico, Long>{
 
     List<Servico> findByTrabalhadorId(Long trabalhadorId);
 
+    List<Servico> findByClienteIdOrTrabalhadorId(Long clienteId, Long trabalhadorId);
+
+    List<Servico> findByStatusServico(psg.facilitei.Entity.Enum.StatusServico status,
+                                      org.springframework.data.domain.Sort sort);
+
     boolean existsByIdAndClienteId(Long id, Long clienteId);
 
     boolean existsByIdAndTrabalhadorId(Long id, Long trabalhadorId);

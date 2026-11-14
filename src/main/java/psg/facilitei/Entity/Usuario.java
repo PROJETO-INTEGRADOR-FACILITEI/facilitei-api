@@ -45,6 +45,23 @@ public class Usuario {
     @Column(name = "suspension_reason", length = 2000)
     private String suspensionReason;
 
+    /** Fim da punição. {@code null} com status SUSPENDED = suspensão por tempo indeterminado. */
+    @Column(name = "suspended_until")
+    private Instant suspendedUntil;
+
+    /** Conta bloqueada agora (suspensão vigente ou conta excluída). */
+    public boolean isBlockedNow() {
+        if (accountStatus == AccountStatus.DELETED) return true;
+        if (accountStatus != AccountStatus.SUSPENDED) return false;
+        return suspendedUntil == null || suspendedUntil.isAfter(Instant.now());
+    }
+
+    /** Suspensão temporária cujo prazo já terminou e ainda não foi limpa. */
+    public boolean hasExpiredSuspension() {
+        return accountStatus == AccountStatus.SUSPENDED
+                && suspendedUntil != null && !suspendedUntil.isAfter(Instant.now());
+    }
+
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "endereco_id", referencedColumnName = "id")
     @EqualsAndHashCode.Exclude 

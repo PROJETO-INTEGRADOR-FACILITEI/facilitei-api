@@ -65,7 +65,7 @@ public class TrabalhadorController {
         })
         @GetMapping("/listar")
         public List<TrabalhadorResponseDTO> listarTodos() {
-                return service.findAll();
+                return service.findAll().stream().map(this::paraVisitante).toList();
         }
 
         @Operation(summary = "Lista trabalhadores com filtros e paginação")
@@ -80,7 +80,12 @@ public class TrabalhadorController {
                 if (page < 0 || size < 1 || size > 100 || notaMinima < 0 || notaMinima > 5) {
                         throw new BusinessRuleException("Parâmetros de paginação ou nota inválidos");
                 }
-                return service.findAllPaginado(page, size, nome, localizacao, tiposServico, notaMinima);
+                TrabalhadorPageResponseDTO resultado =
+                                service.findAllPaginado(page, size, nome, localizacao, tiposServico, notaMinima);
+                return new TrabalhadorPageResponseDTO(
+                                resultado.content().stream().map(this::paraVisitante).toList(),
+                                resultado.totalElements(), resultado.totalPages(), resultado.page(),
+                                resultado.size(), resultado.first(), resultado.last());
         }
 
         @Operation(summary = "Atualiza um trabalhador existente", description = "Atualiza os dados de um trabalhador com base no ID fornecido.")
@@ -118,7 +123,43 @@ public class TrabalhadorController {
         @GetMapping("buscarPorId/{id}")
         public ResponseEntity<TrabalhadorResponseDTO> buscarPorId(@PathVariable Long id) {
                 TrabalhadorResponseDTO dto = service.findById(id);
-                return ResponseEntity.ok(dto);
+                return ResponseEntity.ok(paraVisitante(dto));
         }
 
+
+        /**
+         * Perfil público: quem não é o próprio profissional (nem admin) não vê e-mail,
+         * telefone nem endereço completo — só bairro, cidade e estado. O contato acontece
+         * pelo chat depois que o pedido é aceito.
+         */
+        private TrabalhadorResponseDTO paraVisitante(TrabalhadorResponseDTO dto) {
+                if (dto == null || podeVerDadosPrivados(dto.getId())) return dto;
+                TrabalhadorResponseDTO publico = new TrabalhadorResponseDTO();
+                publico.setId(dto.getId());
+                publico.setNome(dto.getNome());
+                publico.setDisponibilidade(dto.getDisponibilidade());
+                publico.setServicos(dto.getServicos());
+                publico.setServicoPrincipal(dto.getServicoPrincipal());
+                publico.setNotaTrabalhador(dto.getNotaTrabalhador());
+                publico.setAvaliacoesPorServico(dto.getAvaliacoesPorServico());
+                publico.setSobre(dto.getSobre());
+                publico.setAvatarUrl(dto.getAvatarUrl());
+                if (dto.getEndereco() != null) {
+                        psg.facilitei.DTO.EnderecoResponseDTO local = new psg.facilitei.DTO.EnderecoResponseDTO();
+                        local.setBairro(dto.getEndereco().getBairro());
+                        local.setCidade(dto.getEndereco().getCidade());
+                        local.setEstado(dto.getEndereco().getEstado());
+                        publico.setEndereco(local);
+                }
+                return publico;
+        }
+
+        private boolean podeVerDadosPrivados(String trabalhadorId) {
+                var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                if (auth == null || !(auth.getPrincipal() instanceof psg.facilitei.Security.AuthenticatedPrincipal actor)) {
+                        return false;
+                }
+                boolean admin = auth.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+                return admin || (actor.isTrabalhador() && String.valueOf(actor.id()).equals(trabalhadorId));
+        }
 }
