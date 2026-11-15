@@ -10,7 +10,6 @@ import java.util.List;
 import psg.facilitei.Entity.Enum.AccountStatus;
 import psg.facilitei.Entity.Enum.StatusServico;
 import psg.facilitei.Entity.Enum.StatusSolicitacao;
-import psg.facilitei.Entity.Enum.TipoServico;
 
 public final class AdminDTOs {
     private AdminDTOs() {}
@@ -43,7 +42,7 @@ public final class AdminDTOs {
             Long id,
             String titulo,
             String descricao,
-            TipoServico tipoServico,
+            String tipoServico,
             StatusServico statusServico,
             Long clienteId,
             String clienteNome,
@@ -55,7 +54,7 @@ public final class AdminDTOs {
             Long id,
             String titulo,
             String descricao,
-            TipoServico tipoServico,
+            String tipoServico,
             StatusSolicitacao status,
             LocalDateTime dataSolicitacao,
             Long clienteId,

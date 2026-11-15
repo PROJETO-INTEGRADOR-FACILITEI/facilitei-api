@@ -1,7 +1,6 @@
 package psg.facilitei.DTO;
 
 import psg.facilitei.Entity.Enum.StatusServico;
-import psg.facilitei.Entity.Enum.TipoServico;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -32,7 +31,7 @@ public class ServicoResponseDTO {
     private Long disponibilidadeId;
 
     @Schema(description = "Tipo de serviço", example = "INSTALADOR_AR_CONDICIONADO")
-    private TipoServico tipoServico;
+    private String tipoServico;
 
     @Schema(description = "Status atual do serviço", example = "PENDENTE")
     private StatusServico statusServico;

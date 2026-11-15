@@ -17,7 +17,6 @@ import psg.facilitei.Entity.AvaliacaoServico;
 import psg.facilitei.Entity.Trabalhador;
 import psg.facilitei.Entity.Enum.StatusServico;
 import psg.facilitei.Entity.Enum.AccountStatus;
-import psg.facilitei.Entity.Enum.TipoServico;
 import psg.facilitei.Repository.ClienteRepository;
 import psg.facilitei.Repository.ServicoRepository;
 import psg.facilitei.Repository.AvaliacaoServicoRepository;
@@ -63,30 +62,30 @@ class TrabalhadorServiceListagemTest {
     @Test
     void listarPaginado_incluiMediaEQuantidadePorEspecialidade() {
         Trabalhador ana = repository.save(trabalhador("Ana", "ana@example.com", "Recife", 4.0,
-                List.of(TipoServico.DIARISTA, TipoServico.FAXINEIRA)));
+                List.of("DIARISTA", "FAXINEIRA")));
         Cliente cliente = new Cliente();
         cliente.setNome("Cliente");
         cliente.setEmail("cliente@example.com");
         cliente.setSenha("senha");
         cliente = clienteRepository.save(cliente);
 
-        avaliar(ana, cliente, TipoServico.DIARISTA, 5);
-        avaliar(ana, cliente, TipoServico.DIARISTA, 3);
-        avaliar(ana, cliente, TipoServico.FAXINEIRA, 2);
+        avaliar(ana, cliente, "DIARISTA", 5);
+        avaliar(ana, cliente, "DIARISTA", 3);
+        avaliar(ana, cliente, "FAXINEIRA", 2);
 
         var resultado = service.findAllPaginado(0, 12, null, null, List.of(), 0.0);
         var resumos = resultado.content().get(0).getAvaliacoesPorServico();
 
         assertEquals(2, resumos.size());
-        assertEquals(4.0, resumos.stream().filter(r -> r.tipoServico() == TipoServico.DIARISTA)
+        assertEquals(4.0, resumos.stream().filter(r -> r.tipoServico() == "DIARISTA")
                 .findFirst().orElseThrow().media());
-        assertEquals(2L, resumos.stream().filter(r -> r.tipoServico() == TipoServico.DIARISTA)
+        assertEquals(2L, resumos.stream().filter(r -> r.tipoServico() == "DIARISTA")
                 .findFirst().orElseThrow().quantidadeAvaliacoes());
-        assertEquals(2.0, resumos.stream().filter(r -> r.tipoServico() == TipoServico.FAXINEIRA)
+        assertEquals(2.0, resumos.stream().filter(r -> r.tipoServico() == "FAXINEIRA")
                 .findFirst().orElseThrow().media());
     }
 
-    private void avaliar(Trabalhador trabalhador, Cliente cliente, TipoServico tipo, int nota) {
+    private void avaliar(Trabalhador trabalhador, Cliente cliente, String tipo, int nota) {
         Servico servico = new Servico();
         servico.setTitulo("Serviço");
         servico.setDescricao("Descrição do serviço");
@@ -106,15 +105,15 @@ class TrabalhadorServiceListagemTest {
     @Test
     void listarPaginado_aplicaFiltrosSemDuplicarTrabalhadores() {
         repository.save(trabalhador("Ana Lima", "ana@example.com", "Recife", 4.5,
-                List.of(TipoServico.DIARISTA, TipoServico.FAXINEIRA)));
+                List.of("DIARISTA", "FAXINEIRA")));
         repository.save(trabalhador("Ana Souza", "ana2@example.com", "Recife", 3.0,
-                List.of(TipoServico.DIARISTA)));
+                List.of("DIARISTA")));
         repository.save(trabalhador("Bruna", "bruna@example.com", "Olinda", 5.0,
-                List.of(TipoServico.PEDREIRO)));
+                List.of("PEDREIRO")));
         repository.flush();
 
         TrabalhadorPageResponseDTO resultado = service.findAllPaginado(0, 12, "ana", "recife",
-                List.of(TipoServico.DIARISTA, TipoServico.FAXINEIRA), 4.0);
+                List.of("DIARISTA", "FAXINEIRA"), 4.0);
 
         assertEquals(1, resultado.totalElements());
         assertEquals("Ana Lima", resultado.content().get(0).getNome());
@@ -124,9 +123,9 @@ class TrabalhadorServiceListagemTest {
     @Test
     void listarPaginado_devolveMetadadosDaProximaPagina() {
         repository.save(trabalhador("Ana", "ana@example.com", "Recife", 4.5,
-                List.of(TipoServico.DIARISTA)));
+                List.of("DIARISTA")));
         repository.save(trabalhador("Bruna", "bruna@example.com", "Olinda", 5.0,
-                List.of(TipoServico.PEDREIRO)));
+                List.of("PEDREIRO")));
         repository.flush();
 
         assertEquals(2, service.findAll().size());
@@ -143,9 +142,9 @@ class TrabalhadorServiceListagemTest {
     @Test
     void listagensPublicasOcultamProfissionalSuspenso() {
         repository.save(trabalhador("Ativo", "ativo@example.com", "Recife", 4.5,
-                List.of(TipoServico.DIARISTA)));
+                List.of("DIARISTA")));
         Trabalhador suspenso = trabalhador("Suspenso", "suspenso@example.com", "Recife", 5.0,
-                List.of(TipoServico.PEDREIRO));
+                List.of("PEDREIRO"));
         suspenso.setAccountStatus(AccountStatus.SUSPENDED);
         repository.save(suspenso);
         repository.flush();
@@ -157,7 +156,7 @@ class TrabalhadorServiceListagemTest {
     }
 
     private Trabalhador trabalhador(String nome, String email, String cidade, double nota,
-            List<TipoServico> habilidades) {
+            List<String> habilidades) {
         Trabalhador trabalhador = new Trabalhador();
         trabalhador.setNome(nome);
         trabalhador.setEmail(email);

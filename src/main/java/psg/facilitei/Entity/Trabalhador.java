@@ -9,7 +9,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import psg.facilitei.Entity.Enum.TipoServico;
 
 @Entity
 @Table(name = "trabalhador")
@@ -25,15 +24,13 @@ public class Trabalhador extends Usuario {
     @ToString.Exclude
     private List<Servico> servicos = new ArrayList<>();
 
-    @ElementCollection(targetClass = TipoServico.class, fetch = FetchType.EAGER)
+    @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
     @CollectionTable(name = "trabalhador_habilidades", joinColumns = @JoinColumn(name = "trabalhador_id"))
-    @Enumerated(EnumType.STRING)
     @Column(name = "habilidade")
-    private List<TipoServico> habilidades = new ArrayList<>();
+    private List<String> habilidades = new ArrayList<>();
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "servico_principal")
-    private TipoServico servicoPrincipal;
+    private String servicoPrincipal;
 
     @OneToMany(mappedBy = "trabalhador", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @EqualsAndHashCode.Exclude

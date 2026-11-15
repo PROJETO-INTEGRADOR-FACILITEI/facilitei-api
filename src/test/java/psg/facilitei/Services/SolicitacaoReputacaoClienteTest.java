@@ -18,7 +18,6 @@ import psg.facilitei.Entity.SolicitacaoServico;
 import psg.facilitei.Entity.Trabalhador;
 import psg.facilitei.Entity.Enum.StatusServico;
 import psg.facilitei.Entity.Enum.StatusSolicitacao;
-import psg.facilitei.Entity.Enum.TipoServico;
 import psg.facilitei.Repository.AvaliacaoClienteRepository;
 import psg.facilitei.Repository.ServicoRepository;
 import psg.facilitei.Repository.SolicitacaoServicoRepository;
@@ -43,7 +42,7 @@ class SolicitacaoReputacaoClienteTest {
         s.setId(9L);
         s.setCliente(cliente);
         s.setTrabalhador(trabalhador);
-        s.setTipoServico(TipoServico.AULAS_INGLES);
+        s.setTipoServico("AULAS_INGLES");
         s.setDescricao("Preciso aprender inglês");
         s.setStatusSolicitacao(StatusSolicitacao.PENDENTE);
         s.setDataSolicitacao(LocalDateTime.now());

@@ -1,7 +1,6 @@
 package psg.facilitei.DTO;
 
 import java.time.LocalDateTime;
-import psg.facilitei.Entity.Enum.TipoServico;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -16,7 +15,7 @@ public class SolicitacaoServicoResponseDTO {
     private Long clienteId;
     private Long trabalhadorId;
     private Long servicoId; // Pode vir nulo se ainda não foi aceito
-    private TipoServico tipoServico;
+    private String tipoServico;
     private String descricao;
     private String status;
     private ClienteResumoDTO cliente;
@@ -38,7 +37,7 @@ public class SolicitacaoServicoResponseDTO {
     private String motivoCancelamento;
 
     public SolicitacaoServicoResponseDTO(Long id, Long clienteId, Long trabalhadorId, Long servicoId,
-                                         TipoServico tipoServico, String descricao, String status,
+                                         String tipoServico, String descricao, String status,
                                          ClienteResumoDTO cliente) {
         this.id = id;
         this.clienteId = clienteId;

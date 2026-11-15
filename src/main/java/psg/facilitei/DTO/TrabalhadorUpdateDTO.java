@@ -7,7 +7,6 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import psg.facilitei.Entity.Enum.TipoServico;
 
 import java.util.List;
 
@@ -28,8 +27,8 @@ public class TrabalhadorUpdateDTO {
     @Valid
     private EnderecoRequestDTO endereco;
 
-    private List<TipoServico> habilidades;
-    private TipoServico servicoPrincipal;
+    private List<String> habilidades;
+    private String servicoPrincipal;
     private String disponibilidade;
 
     @Size(max = 200, message = "A descrição deve ter no máximo 200 caracteres.")

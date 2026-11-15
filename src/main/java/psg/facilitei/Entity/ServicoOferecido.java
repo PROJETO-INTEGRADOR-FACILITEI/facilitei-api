@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import psg.facilitei.Entity.Enum.TipoServico;
 
 /** Serviço criado pelo próprio profissional, com título, descrição e preço livres. */
 @Entity
@@ -36,9 +35,8 @@ public class ServicoOferecido {
     private BigDecimal preco;
 
     /** Categoria usada na busca. Opcional: o serviço pode não se encaixar nas categorias fixas. */
-    @Enumerated(EnumType.STRING)
     @Column(name = "tipo_servico")
-    private TipoServico tipoServico;
+    private String tipoServico;
 
     @Column(nullable = false)
     private boolean ativo = true;

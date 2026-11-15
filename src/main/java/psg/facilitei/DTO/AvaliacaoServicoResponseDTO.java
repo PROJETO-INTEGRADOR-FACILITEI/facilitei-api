@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.Date;
 import java.util.List;
-import psg.facilitei.Entity.Enum.TipoServico;
 
 @Data
 @NoArgsConstructor
@@ -33,7 +32,7 @@ public class AvaliacaoServicoResponseDTO {
     private long servicoId;
 
     @Schema(description = "Especialidade do serviço avaliado")
-    private TipoServico tipoServico;
+    private String tipoServico;
 
     @Schema(description = "Nome do cliente que avaliou")
     private String clienteNome;

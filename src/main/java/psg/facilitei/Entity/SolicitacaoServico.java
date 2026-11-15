@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import psg.facilitei.Entity.Enum.StatusSolicitacao;
-import psg.facilitei.Entity.Enum.TipoServico;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -46,10 +45,9 @@ public class SolicitacaoServico {
     @ToString.Exclude
     private Servico servico;
 
-    @Enumerated(EnumType.STRING)
     @NotNull(message = "O tipo de serviço é obrigatório")
     @Column(name = "tipo_servico", nullable = false)
-    private TipoServico tipoServico;
+    private String tipoServico;
 
     @NotBlank(message = "A descrição da solicitação é obrigatória.")
     @Column(name = "descricao", nullable = false, length = 500)

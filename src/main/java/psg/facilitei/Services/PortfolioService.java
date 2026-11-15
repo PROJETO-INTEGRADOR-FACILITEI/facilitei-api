@@ -11,7 +11,6 @@ import psg.facilitei.DTO.PortfolioResponseDTO;
 import psg.facilitei.Entity.Portfolio;
 import psg.facilitei.Entity.PortfolioImagem;
 import psg.facilitei.Entity.Trabalhador;
-import psg.facilitei.Entity.Enum.TipoServico;
 import psg.facilitei.Entity.Enum.AccountStatus;
 import psg.facilitei.Exceptions.BusinessRuleException;
 import psg.facilitei.Exceptions.ResourceNotFoundException;
@@ -22,6 +21,9 @@ import java.util.ArrayList;
 
 @Service
 public class PortfolioService {
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private ProfissaoService profissaoService;
 
     @Autowired
     private PortfolioRepository portfolioRepository;
@@ -68,7 +70,7 @@ public class PortfolioService {
     }
 
     @Transactional
-    public PortfolioResponseDTO adicionarImagens(Long id, List<MultipartFile> imagens, TipoServico tipoServico) {
+    public PortfolioResponseDTO adicionarImagens(Long id, List<MultipartFile> imagens, String tipoServico) {
         Portfolio portfolio = buscarEntidadePorId(id);
         adicionarUploads(portfolio, imagens, tipoServico);
 
@@ -97,11 +99,12 @@ public class PortfolioService {
         portfolioRepository.deleteById(id);
     }
 
-    private void adicionarUploads(Portfolio portfolio, List<MultipartFile> imagens, TipoServico tipoServico) {
+    private void adicionarUploads(Portfolio portfolio, List<MultipartFile> imagens, String tipoServico) {
         if (imagens == null || imagens.isEmpty()) {
             throw new BusinessRuleException("É necessário enviar ao menos uma imagem.");
         }
 
+        if (profissaoService != null) tipoServico = profissaoService.exigir(tipoServico);
         List<PortfolioImagem> imagensEnviadas = new ArrayList<>();
         try {
             for (MultipartFile arquivo : imagens) {

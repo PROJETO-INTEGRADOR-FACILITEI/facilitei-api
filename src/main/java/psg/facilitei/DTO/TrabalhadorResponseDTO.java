@@ -4,7 +4,6 @@ import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import psg.facilitei.Entity.Enum.TipoServico;
 
 @Data
 @NoArgsConstructor
@@ -16,8 +15,8 @@ public class TrabalhadorResponseDTO {
     private EnderecoResponseDTO endereco;
     private String telefone;
     private String disponibilidade;
-    private List<TipoServico> servicos; 
-    private TipoServico servicoPrincipal;
+    private List<String> servicos; 
+    private String servicoPrincipal;
     private Double notaTrabalhador;
     private List<ResumoAvaliacaoTipoServicoDTO> avaliacoesPorServico;
     private String sobre;

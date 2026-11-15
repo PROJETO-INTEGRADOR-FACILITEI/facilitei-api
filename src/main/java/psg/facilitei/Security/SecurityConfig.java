@@ -48,7 +48,12 @@ public class SecurityConfig {
                         // endpoint é autenticado pela assinatura do webhook.
                         .ignoringRequestMatchers("/api/assinaturas/prestador/webhook"))
                 .requestCache(cache -> cache.requestCache(new NullRequestCache()))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        // O login (AuthController) já descarta a sessão antiga e cria uma nova.
+                        // Sem isto, o Spring trocava o ID da sessão a cada pedido autenticado e
+                        // pedidos simultâneos com o ID antigo recebiam 401 ("Autenticação necessária").
+                        .sessionFixation(fixation -> fixation.none()))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.GET,
                                 "/health",
@@ -59,6 +64,7 @@ public class SecurityConfig {
                                 "/api/servicos-oferecidos/trabalhador/**",
                                 "/api/avaliacoes-servico/trabalhador/**",
                                 "/api/legal/config",
+                                "/api/profissoes",
                                 "/api/legal/documents/**",
                                 "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.POST,

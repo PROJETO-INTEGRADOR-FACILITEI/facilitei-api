@@ -14,7 +14,6 @@ import psg.facilitei.DTO.ServicoResponseDTO;
 import psg.facilitei.Entity.Cliente;
 import psg.facilitei.Entity.Enum.StatusSolicitacao;
 import psg.facilitei.Entity.Enum.StatusServico;
-import psg.facilitei.Entity.Enum.TipoServico;
 import psg.facilitei.Entity.Servico;
 import psg.facilitei.Entity.SolicitacaoServico;
 import psg.facilitei.Entity.Trabalhador;
@@ -83,7 +82,7 @@ class ServicoServiceTest {
         servico.setId(1L);
         servico.setTitulo("Reparo elétrico");
         servico.setDescricao("Troca de disjuntor");
-        servico.setTipoServico(TipoServico.ELETRICISTA);
+        servico.setTipoServico("ELETRICISTA");
         servico.setStatusServico(StatusServico.PENDENTE);
 
         when(servicoRepository.findById(1L)).thenReturn(Optional.of(servico));
@@ -106,7 +105,7 @@ class ServicoServiceTest {
         ServicoRequestDTO dto = new ServicoRequestDTO();
         dto.setTitulo("Pintura de sala");
         dto.setDescricao("Pintura completa");
-        dto.setTipoServico(TipoServico.PINTOR);
+        dto.setTipoServico("PINTOR");
         dto.setTrabalhadorId(1L);
         dto.setClienteId(2L);
 
@@ -133,7 +132,7 @@ class ServicoServiceTest {
         ServicoRequestDTO dto = new ServicoRequestDTO();
         dto.setTitulo("Pintura de sala");
         dto.setDescricao("Pintura completa");
-        dto.setTipoServico(TipoServico.PINTOR);
+        dto.setTipoServico("PINTOR");
         dto.setTrabalhadorId(1L);
         dto.setClienteId(2L);
         dto.setSolicitacaoId(7L);
@@ -147,7 +146,7 @@ class ServicoServiceTest {
         solicitacao.setId(7L);
         solicitacao.setTrabalhador(trabalhador);
         solicitacao.setCliente(cliente);
-        solicitacao.setTipoServico(TipoServico.PINTOR);
+        solicitacao.setTipoServico("PINTOR");
         solicitacao.setStatusSolicitacao(StatusSolicitacao.PENDENTE);
 
         when(trabalhadorService.buscarEntidadePorId(1L)).thenReturn(trabalhador);
@@ -200,7 +199,7 @@ class ServicoServiceTest {
     void listarPorCliente_delegaParaRepository() {
         Servico servico = new Servico();
         servico.setId(1L);
-        servico.setTipoServico(TipoServico.ENCANADOR);
+        servico.setTipoServico("ENCANADOR");
         servico.setStatusServico(StatusServico.FINALIZADO);
 
         when(servicoRepository.findByClienteId(2L)).thenReturn(List.of(servico));
@@ -221,7 +220,7 @@ class ServicoServiceTest {
         servico.setId(10L);
         servico.setTitulo("Pintura de sala");
         servico.setDescricao("Pintura completa");
-        servico.setTipoServico(TipoServico.PINTOR);
+        servico.setTipoServico("PINTOR");
         servico.setStatusServico(status);
         servico.setTrabalhador(trabalhador);
         servico.setCliente(cliente);
@@ -263,7 +262,7 @@ class ServicoServiceTest {
         ServicoRequestDTO dto = new ServicoRequestDTO();
         dto.setTitulo("Pintura de sala");
         dto.setDescricao("Pintura completa");
-        dto.setTipoServico(TipoServico.PINTOR);
+        dto.setTipoServico("PINTOR");
         dto.setTrabalhadorId(1L);
         dto.setClienteId(2L);
         Trabalhador trabalhador = new Trabalhador();

@@ -11,7 +11,6 @@ import psg.facilitei.DTO.PortfolioResponseDTO;
 import psg.facilitei.Entity.Portfolio;
 import psg.facilitei.Entity.PortfolioImagem;
 import psg.facilitei.Entity.Trabalhador;
-import psg.facilitei.Entity.Enum.TipoServico;
 import psg.facilitei.Entity.Enum.AccountStatus;
 import psg.facilitei.Exceptions.ResourceNotFoundException;
 import psg.facilitei.Exceptions.BusinessRuleException;
@@ -44,7 +43,7 @@ class PortfolioServiceTest {
         MockMultipartFile arquivo = new MockMultipartFile(
                 "imagens", "servico.png", "image/png", new byte[] { 1, 2, 3 });
         PortfolioRequestDTO request = new PortfolioRequestDTO(
-                7L, List.of(arquivo), TipoServico.ELETRICISTA);
+                7L, List.of(arquivo), "ELETRICISTA");
         Trabalhador trabalhador = new Trabalhador();
         trabalhador.setId(7L);
 
@@ -66,14 +65,14 @@ class PortfolioServiceTest {
         assertEquals(3L, response.getId());
         assertEquals(7L, response.getTrabalhadorId());
         assertEquals(11L, response.getImagens().get(0).getId());
-        assertEquals(TipoServico.ELETRICISTA, response.getImagens().get(0).getTipoServico());
+        assertEquals("ELETRICISTA", response.getImagens().get(0).getTipoServico());
         verify(storageService).uploadImage(arquivo, "facilitei/portfolios");
     }
 
     @Test
     void criar_quandoTrabalhadorJaTemPortfolio_rejeitaDuplicidade() {
         PortfolioRequestDTO request = new PortfolioRequestDTO(
-                7L, List.of(), TipoServico.ELETRICISTA);
+                7L, List.of(), "ELETRICISTA");
         when(portfolioRepository.existsByTrabalhadorId(7L)).thenReturn(true);
 
         assertThrows(BusinessRuleException.class, () -> portfolioService.criar(request));

@@ -5,7 +5,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import psg.facilitei.Entity.Enum.StatusServico;
-import psg.facilitei.Entity.Enum.TipoServico;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -33,7 +32,7 @@ public class ServicoRequestDTO {
 
     @NotNull(message = "O tipo de serviço é obrigatório.")
     @Schema(description = "Tipo de serviço oferecido (Enum)", example = "INSTALADOR_AR_CONDICIONADO")
-    private TipoServico tipoServico;
+    private String tipoServico;
 
     @NotNull(message = "O ID do cliente é obrigatório.")
     @Schema(description = "ID do cliente solicitante do serviço", example = "2")

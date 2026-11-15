@@ -28,6 +28,9 @@ import java.util.stream.Collectors;
 @Service
 public class ServicoService {
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private ProfissaoService profissaoService;
+
     @Autowired
     private ServicoRepository servicoRepository;
 
@@ -157,7 +160,7 @@ public class ServicoService {
                             solicitacao.getServicoOferecido().getPreco()))
                     .append('\n');
         }
-        resumo.append("Categoria: ").append(formatarTipo(servico.getTipoServico().name())).append('\n');
+        resumo.append("Categoria: ").append(formatarTipo(servico.getTipoServico())).append('\n');
         resumo.append("Cliente: ").append(cliente.getNome()).append('\n');
         if (cliente.getEndereco() != null) {
             var e = cliente.getEndereco();
@@ -247,9 +250,8 @@ public class ServicoService {
         });
     }
 
-    private static String formatarTipo(String value) {
-        String texto = value.toLowerCase().replace('_', ' ');
-        return Character.toUpperCase(texto.charAt(0)) + texto.substring(1);
+    private String formatarTipo(String value) {
+        return profissaoService == null ? ProfissaoService.humanizar(value) : profissaoService.nome(value);
     }
 
     private void validarSolicitacaoPendente(SolicitacaoServico solicitacao, ServicoRequestDTO dto) {
@@ -258,7 +260,7 @@ public class ServicoService {
         }
         if (!solicitacao.getTrabalhador().getId().equals(dto.getTrabalhadorId())
                 || !solicitacao.getCliente().getId().equals(dto.getClienteId())
-                || solicitacao.getTipoServico() != dto.getTipoServico()) {
+                || !java.util.Objects.equals(solicitacao.getTipoServico(), dto.getTipoServico())) {
             throw new BusinessRuleException("Os dados do serviço não correspondem à solicitação informada.");
         }
     }

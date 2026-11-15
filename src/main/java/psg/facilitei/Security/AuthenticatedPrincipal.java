@@ -1,6 +1,6 @@
 package psg.facilitei.Security;
 
-public record AuthenticatedPrincipal(Long id, String role, String name) {
+public record AuthenticatedPrincipal(Long id, String role, String name) implements java.io.Serializable {
     public boolean isCliente() {
         return "cliente".equals(role);
     }

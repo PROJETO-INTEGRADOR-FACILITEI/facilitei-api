@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import psg.facilitei.Entity.Enum.TipoServico;
 
 @Data
 @NoArgsConstructor
@@ -19,5 +18,5 @@ public class PortfolioImagemResponseDTO {
     private String url;
 
     @Schema(description = "Especialidade usada para agrupar a imagem", example = "ELETRICISTA")
-    private TipoServico tipoServico;
+    private String tipoServico;
 }

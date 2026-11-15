@@ -54,11 +54,12 @@ class ErrorMessagesIntegrationTest {
     }
 
     @Test
-    void opcaoVaziaEmCampoDeListaDizQualCampo() throws Exception {
-        postJson("/api/trabalhadores", "{\"nome\":\"Ana\",\"servicoPrincipal\":\"\"}")
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Selecione uma opção em Serviço principal."))
-                .andExpect(jsonPath("$.errors[0].field").value("servicoPrincipal"));
+    void listaDeProfissoesEPublicaETrazAsDaPlataforma() throws Exception {
+        mockMvc.perform(get("/api/profissoes"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].codigo").value("PEDREIRO"))
+                .andExpect(jsonPath("$[0].nome").value("Pedreiro"))
+                .andExpect(jsonPath("$[0].personalizada").value(false));
     }
 
     @Test

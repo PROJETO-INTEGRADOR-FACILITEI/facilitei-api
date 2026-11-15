@@ -10,7 +10,6 @@ import org.springframework.web.multipart.MultipartFile;
 import psg.facilitei.DTO.PortfolioRequestDTO;
 import psg.facilitei.DTO.PortfolioResponseDTO;
 import psg.facilitei.Services.PortfolioService;
-import psg.facilitei.Entity.Enum.TipoServico;
 import psg.facilitei.Security.AccessControlService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -76,7 +75,7 @@ public class PortfolioController {
     })
     public ResponseEntity<PortfolioResponseDTO> adicionarImagens(@PathVariable Long id,
             @RequestParam("imagens") List<MultipartFile> imagens,
-            @RequestParam("tipoServico") TipoServico tipoServico) {
+            @RequestParam("tipoServico") String tipoServico) {
         access.requirePortfolioOwner(id);
         return ResponseEntity.ok(portfolioService.adicionarImagens(id, imagens, tipoServico));
     }

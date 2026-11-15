@@ -16,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import psg.facilitei.Entity.ServicoOferecido;
 import psg.facilitei.Entity.Trabalhador;
-import psg.facilitei.Entity.Enum.TipoServico;
 import psg.facilitei.Exceptions.BusinessRuleException;
 import psg.facilitei.Exceptions.ResourceNotFoundException;
 import psg.facilitei.Repository.ServicoOferecidoRepository;
@@ -39,14 +38,16 @@ public class ServicoOferecidoController {
             @Size(max = 500, message = "A descrição deve ter no máximo 500 caracteres.") String descricao,
             @DecimalMin(value = "0.0", message = "O preço não pode ser negativo.")
             @DecimalMax(value = "99999999.99", message = "Preço muito alto.") BigDecimal preco,
-            TipoServico tipoServico) {}
+            String tipoServico) {}
 
     public record Response(Long id, Long trabalhadorId, String titulo, String descricao,
-                           BigDecimal preco, TipoServico tipoServico) {}
+                           BigDecimal preco, String tipoServico) {}
 
     private final ServicoOferecidoRepository repository;
     private final TrabalhadorRepository trabalhadores;
     private final AccessControlService access;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private psg.facilitei.Services.ProfissaoService profissaoService;
 
     public ServicoOferecidoController(ServicoOferecidoRepository repository,
                                       TrabalhadorRepository trabalhadores,
@@ -111,11 +112,11 @@ public class ServicoOferecidoController {
         return actor;
     }
 
-    private static void aplicar(ServicoOferecido servico, Request request) {
+    private void aplicar(ServicoOferecido servico, Request request) {
         servico.setTitulo(HtmlSanitizer.sanitize(request.titulo().trim()));
         servico.setDescricao(HtmlSanitizer.sanitize(request.descricao().trim()));
         servico.setPreco(request.preco() == null ? null : request.preco().setScale(2, RoundingMode.HALF_UP));
-        servico.setTipoServico(request.tipoServico());
+        servico.setTipoServico(profissaoService == null ? request.tipoServico() : profissaoService.exigir(request.tipoServico()));
     }
 
     private static Response toResponse(ServicoOferecido s) {

@@ -13,7 +13,6 @@ import psg.facilitei.DTO.SolicitacaoServicoRequestDTO;
 import psg.facilitei.DTO.LegalAcceptanceRequestDTO;
 import psg.facilitei.Domain.LegalDocumentType;
 import psg.facilitei.Entity.Cliente;
-import psg.facilitei.Entity.Enum.TipoServico;
 import psg.facilitei.Entity.Trabalhador;
 import psg.facilitei.Repository.ClienteRepository;
 import psg.facilitei.Repository.TrabalhadorRepository;
@@ -67,7 +66,7 @@ class ContratacaoAvaliacaoFlowIntegrationTest {
         SolicitacaoServicoRequestDTO solicitacaoDto = new SolicitacaoServicoRequestDTO();
         solicitacaoDto.setClienteId(cliente.getId());
         solicitacaoDto.setTrabalhadorId(trabalhador.getId());
-        solicitacaoDto.setTipoServico(TipoServico.ELETRICISTA);
+        solicitacaoDto.setTipoServico("ELETRICISTA");
         solicitacaoDto.setDescricao("Preciso instalar tomadas na cozinha");
 
         String solicitacaoResponse = mockMvc.perform(post("/api/solicitacoes-servico")
@@ -96,7 +95,7 @@ class ContratacaoAvaliacaoFlowIntegrationTest {
         ServicoRequestDTO servicoDto = new ServicoRequestDTO();
         servicoDto.setTitulo("Instalação elétrica");
         servicoDto.setDescricao("Instalar tomadas na cozinha");
-        servicoDto.setTipoServico(TipoServico.ELETRICISTA);
+        servicoDto.setTipoServico("ELETRICISTA");
         servicoDto.setTrabalhadorId(trabalhador.getId());
         servicoDto.setClienteId(cliente.getId());
         servicoDto.setSolicitacaoId(solicitacaoId);

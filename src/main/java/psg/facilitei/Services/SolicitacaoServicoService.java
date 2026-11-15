@@ -28,6 +28,9 @@ import java.util.stream.Collectors;
 @Service
 public class SolicitacaoServicoService {
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private ProfissaoService profissaoService;
+
     @Autowired
     private SolicitacaoServicoRepository solicitacaoServicoRepository;
 
@@ -81,7 +84,7 @@ public class SolicitacaoServicoService {
 
         // 3. Define dados da solicitação
         solicitacao.setDescricao(HtmlSanitizer.sanitize(dto.getDescricao()));
-        solicitacao.setTipoServico(dto.getTipoServico());
+        solicitacao.setTipoServico(profissaoService == null ? dto.getTipoServico() : profissaoService.exigir(dto.getTipoServico()));
         if (dto.getServicoOferecidoId() != null) {
             var oferecido = servicoOferecidoRepository
                     .findByIdAndTrabalhadorId(dto.getServicoOferecidoId(), trabalhador.getId())
@@ -105,7 +108,7 @@ public class SolicitacaoServicoService {
                 "Nova solicitação de serviço",
                 cliente.getNome() + " precisa de " + (solicitacao.getTitulo() != null
                         ? "“" + solicitacao.getTitulo() + "”"
-                        : formatarTipo(solicitacao.getTipoServico().name())) + ".",
+                        : formatarTipo(solicitacao.getTipoServico())) + ".",
                 "/painel");
         
         // Mapeamento manual para garantir retorno correto dos IDs
@@ -158,7 +161,7 @@ public class SolicitacaoServicoService {
                 existente.getCliente().getId(), NotificationType.REQUEST_DECLINED,
                 "Solicitação não aceita",
                 existente.getTrabalhador().getNome() + " não pôde aceitar seu pedido de "
-                        + formatarTipo(existente.getTipoServico().name()) + ".",
+                        + formatarTipo(existente.getTipoServico()) + ".",
                 "/painel");
         return mapToResponse(atualizada);
     }
@@ -241,6 +244,7 @@ public class SolicitacaoServicoService {
     }
 
     private String formatarTipo(String value) {
-        return value.toLowerCase().replace('_', ' ');
+        String nome = profissaoService == null ? ProfissaoService.humanizar(value) : profissaoService.nome(value);
+        return nome.toLowerCase();
     }
 }

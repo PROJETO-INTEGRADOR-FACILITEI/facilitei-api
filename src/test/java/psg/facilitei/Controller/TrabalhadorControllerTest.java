@@ -10,7 +10,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import psg.facilitei.DTO.TrabalhadorPageResponseDTO;
 import psg.facilitei.DTO.TrabalhadorResponseDTO;
-import psg.facilitei.Entity.Enum.TipoServico;
 import psg.facilitei.Exceptions.GlobalExceptionHandler;
 import psg.facilitei.Services.TrabalhadorService;
 
@@ -44,7 +43,7 @@ class TrabalhadorControllerTest {
         TrabalhadorPageResponseDTO resposta = new TrabalhadorPageResponseDTO(
                 List.of(trabalhador), 13, 2, 0, 12, true, false);
         when(service.findAllPaginado(0, 12, "Ana", "Recife",
-                List.of(TipoServico.DIARISTA), 4.0)).thenReturn(resposta);
+                List.of("DIARISTA"), 4.0)).thenReturn(resposta);
 
         mvc.perform(get("/api/trabalhadores/listar/paginado")
                         .param("page", "0")

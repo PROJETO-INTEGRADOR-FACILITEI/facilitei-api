@@ -23,7 +23,6 @@ import psg.facilitei.DTO.TrabalhadorPageResponseDTO;
 import psg.facilitei.DTO.TrabalhadorResponseDTO;
 import psg.facilitei.DTO.TrabalhadorUpdateDTO;
 import psg.facilitei.Entity.Trabalhador;
-import psg.facilitei.Entity.Enum.TipoServico;
 import psg.facilitei.Services.TrabalhadorService;
 import psg.facilitei.Exceptions.ErrorResponseDTO;
 import psg.facilitei.Exceptions.BusinessRuleException;
@@ -75,7 +74,7 @@ public class TrabalhadorController {
                         @RequestParam(defaultValue = "12") int size,
                         @RequestParam(required = false) String nome,
                         @RequestParam(required = false) String localizacao,
-                        @RequestParam(required = false) List<TipoServico> tiposServico,
+                        @RequestParam(required = false) List<String> tiposServico,
                         @RequestParam(defaultValue = "0") Double notaMinima) {
                 if (page < 0 || size < 1 || size > 100 || notaMinima < 0 || notaMinima > 5) {
                         throw new BusinessRuleException("Parâmetros de paginação ou nota inválidos");

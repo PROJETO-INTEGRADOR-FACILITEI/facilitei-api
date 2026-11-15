@@ -7,7 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
-import psg.facilitei.Entity.Enum.TipoServico;
 
 import java.util.List;
 
@@ -27,5 +26,5 @@ public class PortfolioRequestDTO {
 
     @NotNull(message = "O tipo de serviço é obrigatório.")
     @Schema(description = "Especialidade à qual as imagens pertencem", example = "ELETRICISTA")
-    private TipoServico tipoServico;
+    private String tipoServico;
 }

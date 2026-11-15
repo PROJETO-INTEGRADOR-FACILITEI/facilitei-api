@@ -17,7 +17,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import psg.facilitei.Entity.Endereco;
 import psg.facilitei.Entity.Trabalhador;
-import psg.facilitei.Entity.Enum.TipoServico;
 import psg.facilitei.Repository.TrabalhadorRepository;
 import psg.facilitei.Services.AssinaturaPrestadorService;
 import psg.facilitei.Services.MercadoPagoWebhookVerifier;
@@ -46,8 +45,8 @@ class PublicDataExposureIntegrationTest {
         t.setTelefone("19999990000");
         t.setSenha("$2a$12$hash");
         t.setEndereco(endereco);
-        t.setHabilidades(List.of(TipoServico.PINTOR));
-        t.setServicoPrincipal(TipoServico.PINTOR);
+        t.setHabilidades(List.of("PINTOR"));
+        t.setServicoPrincipal("PINTOR");
         return trabalhadores.save(t).getId();
     }
 

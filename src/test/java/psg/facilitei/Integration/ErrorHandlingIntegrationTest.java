@@ -58,12 +58,12 @@ class ErrorHandlingIntegrationTest {
     }
 
     @Test
-    void enumInvalidoNoBody_retorna400EmVezDe500() throws Exception {
+    void valorInvalidoNoBody_retorna400EmVezDe500() throws Exception {
         mockMvc.perform(post("/api/servicos")
                         .with(user("test"))
                         .with(csrf())
                         .contentType("application/json")
-                        .content("{\"titulo\":\"T\",\"descricao\":\"D\",\"tipoServico\":\"NAO_EXISTE\",\"trabalhadorId\":1,\"clienteId\":1}"))
+                        .content("{\"titulo\":\"T\",\"descricao\":\"D\",\"tipoServico\":\"PINTOR\",\"trabalhadorId\":\"abc\",\"clienteId\":1}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400));
     }

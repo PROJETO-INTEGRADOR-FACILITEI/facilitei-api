@@ -21,7 +21,6 @@ import psg.facilitei.Entity.AvaliacaoTrabalhador;
 import psg.facilitei.Entity.Endereco;
 import psg.facilitei.Entity.Servico;
 import psg.facilitei.Entity.Trabalhador;
-import psg.facilitei.Entity.Enum.TipoServico;
 import psg.facilitei.Entity.Enum.AccountStatus;
 import psg.facilitei.Repository.AvaliacaoClienteRepository;
 import psg.facilitei.Repository.AvaliacaoServicoRepository;
@@ -48,6 +47,8 @@ public class TrabalhadorService {
 
     @Autowired
     private TrabalhadorRepository repository;
+    @Autowired(required = false)
+    private ProfissaoService profissaoService;
     @Autowired
     private PaymentEnvironmentGuard paymentEnvironmentGuard;
     @Autowired
@@ -95,7 +96,7 @@ public class TrabalhadorService {
 
     @Transactional(readOnly = true)
     public TrabalhadorPageResponseDTO findAllPaginado(int page, int size, String nome,
-            String localizacao, List<TipoServico> tiposServico, Double notaMinima) {
+            String localizacao, List<String> tiposServico, Double notaMinima) {
         Specification<Trabalhador> filtros = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("accountStatus"), AccountStatus.ACTIVE));
@@ -161,8 +162,17 @@ public class TrabalhadorService {
         if (dto.getSobre() != null) trabalhador.setSobre(HtmlSanitizer.sanitize(dto.getSobre()));
         if (dto.getTelefone() != null) trabalhador.setTelefone(dto.getTelefone());
         if (dto.getAvatarUrl() != null) trabalhador.setUrlFoto(dto.getAvatarUrl());
-        if (dto.getHabilidades() != null) trabalhador.setHabilidades(dto.getHabilidades());
-        if (dto.getServicoPrincipal() != null) trabalhador.setServicoPrincipal(dto.getServicoPrincipal());
+        if (dto.getHabilidades() != null) {
+            trabalhador.setHabilidades(new ArrayList<>(resolverHabilidades(dto.getHabilidades(), id)));
+        }
+        if (dto.getServicoPrincipal() != null || dto.getHabilidades() != null) {
+            String principal = dto.getServicoPrincipal() != null
+                    ? resolverProfissao(dto.getServicoPrincipal(), id)
+                    : (trabalhador.getHabilidades() != null
+                            && trabalhador.getHabilidades().contains(trabalhador.getServicoPrincipal())
+                            ? trabalhador.getServicoPrincipal() : null);
+            aplicarPrincipal(trabalhador, principal);
+        }
 
         if (dto.getEndereco() != null) {
             Endereco endereco = trabalhador.getEndereco();
@@ -229,8 +239,6 @@ public class TrabalhadorService {
         // CORREÇÃO AQUI: Mapeando a URL da foto vinda do frontend
         trabalhador.setUrlFoto(dto.getAvatarUrl()); 
         
-        trabalhador.setHabilidades(dto.getHabilidades());
-        trabalhador.setServicoPrincipal(dto.getServicoPrincipal());
 
         Endereco endereco = new Endereco();
         endereco.setRua(dto.getEndereco().getRua());
@@ -241,19 +249,38 @@ public class TrabalhadorService {
         endereco.setNumero(dto.getEndereco().getNumero());
         trabalhador.setEndereco(endereco);
 
-        if (dto.getHabilidades() != null) {
-            trabalhador.setHabilidades(dto.getHabilidades());
-        }
-        
-        if (dto.getServicoPrincipal() != null) {
-            trabalhador.setServicoPrincipal(dto.getServicoPrincipal());
-        }
+        // Profissões novas digitadas no cadastro entram na lista para todos.
+        trabalhador.setHabilidades(new ArrayList<>(dto.getHabilidades() == null
+                ? List.of() : resolverHabilidades(dto.getHabilidades(), null)));
+        aplicarPrincipal(trabalhador, resolverProfissao(dto.getServicoPrincipal(), null));
         if (dto.getAvaliacoesIds() != null) {
             List<AvaliacaoTrabalhador> avaliacoes = avaliacaoTrabalhadorRepository.findAllById(dto.getAvaliacoesIds());
             trabalhador.setAvaliacoesTrabalhador(avaliacoes);
         }
 
         return trabalhador;
+    }
+
+    private List<String> resolverHabilidades(List<String> habilidades, Long criadorId) {
+        return profissaoService == null ? habilidades : profissaoService.resolver(habilidades, criadorId);
+    }
+
+    private String resolverProfissao(String profissao, Long criadorId) {
+        if (profissao == null || profissao.isBlank()) return null;
+        return profissaoService == null ? profissao : profissaoService.resolverUm(profissao, criadorId);
+    }
+
+    /** O destaque precisa ser uma das profissões; sem destaque, usa a primeira. */
+    private static void aplicarPrincipal(Trabalhador trabalhador, String principal) {
+        List<String> habilidades = trabalhador.getHabilidades();
+        if (principal != null && habilidades != null && !habilidades.contains(principal)) {
+            habilidades.add(0, principal);
+        }
+        if (principal == null && habilidades != null && !habilidades.isEmpty()) {
+            principal = habilidades.get(0);
+        }
+        if (principal != null && habilidades != null && !habilidades.contains(principal)) principal = null;
+        trabalhador.setServicoPrincipal(principal);
     }
 
     private Map<Long, List<ResumoAvaliacaoTipoServicoDTO>> buscarResumos(List<Trabalhador> trabalhadores) {
@@ -264,7 +291,7 @@ public class TrabalhadorService {
         for (Object[] linha : avaliacaoServicoRepository.resumirPorTrabalhadores(ids)) {
             Long trabalhadorId = (Long) linha[0];
             resumos.computeIfAbsent(trabalhadorId, ignored -> new ArrayList<>()).add(
-                    new ResumoAvaliacaoTipoServicoDTO((TipoServico) linha[1],
+                    new ResumoAvaliacaoTipoServicoDTO((String) linha[1],
                             ((Number) linha[2]).doubleValue(), ((Number) linha[3]).longValue()));
         }
         return resumos;

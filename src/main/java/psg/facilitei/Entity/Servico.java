@@ -10,7 +10,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import psg.facilitei.Entity.Enum.StatusServico;
-import psg.facilitei.Entity.Enum.TipoServico;
 
 @Entity
 @Table(name = "servico")
@@ -43,10 +42,9 @@ public class Servico {
     @ToString.Exclude
     private SolicitacaoServico solicitacao;
 
-    @Enumerated(EnumType.STRING)
     @NotNull(message = "O tipo do serviço é obrigatório")
     @Column(name = "tipo_servico", nullable = false)
-    private TipoServico tipoServico;
+    private String tipoServico;
 
     @ManyToOne
     @JoinColumn(name = "trabalhador_id", nullable = false)
