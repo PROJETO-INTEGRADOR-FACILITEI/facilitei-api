@@ -69,6 +69,13 @@ class ErrorMessagesIntegrationTest {
     }
 
     @Test
+    void profissionalInexistenteDa404EmVezDe500() throws Exception {
+        mockMvc.perform(get("/api/trabalhadores/buscarPorId/999999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Trabalhador não encontrado."));
+    }
+
+    @Test
     void jsonQuebradoTemMensagemEmPortugues() throws Exception {
         postJson("/api/trabalhadores", "{\"nome\": ")
                 .andExpect(status().isBadRequest())

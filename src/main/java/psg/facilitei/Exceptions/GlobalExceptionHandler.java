@@ -191,6 +191,15 @@ public class GlobalExceptionHandler {
         return respond(HttpStatus.NOT_FOUND, ex.getMessage() == null ? defaultReason(HttpStatus.NOT_FOUND) : ex.getMessage());
     }
 
+    @ExceptionHandler(jakarta.persistence.EntityNotFoundException.class)
+    public ResponseEntity<ErrorResponseDTO> handleEntityNotFound(jakarta.persistence.EntityNotFoundException ex) {
+        String message = ex.getMessage() == null ? "" : ex.getMessage();
+        // Não expõe IDs internos: "Trabalhador não encontrado com ID: 9" -> "Trabalhador não encontrado."
+        int idx = message.indexOf(" com ID");
+        if (idx > 0) message = message.substring(0, idx) + ".";
+        return respond(HttpStatus.NOT_FOUND, message.isBlank() ? defaultReason(HttpStatus.NOT_FOUND) : message);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponseDTO> handleValidationErrors(MethodArgumentNotValidException ex) {
         List<ErrorResponseDTO.FieldErrorDTO> errors = new ArrayList<>();
