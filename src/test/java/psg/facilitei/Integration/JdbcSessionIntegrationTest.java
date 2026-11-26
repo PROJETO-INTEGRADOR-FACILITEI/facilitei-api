@@ -91,6 +91,11 @@ class JdbcSessionIntegrationTest {
         assertEquals(true, linhas >= 1, "a sessão precisa estar gravada no banco");
 
         mvc.perform(get("/api/legal/status").cookie(session)).andExpect(status().isOk());
+        // Nada do Spring Security vai para a sessão (evita conflito entre pedidos simultâneos).
+        Integer contextos = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM SPRING_SESSION_ATTRIBUTES WHERE ATTRIBUTE_NAME = 'SPRING_SECURITY_CONTEXT'",
+                Integer.class);
+        assertEquals(0, contextos);
 
         Csrf logged = csrf(session);
         mvc.perform(post("/api/servicos-oferecidos").cookie(session, logged.cookie())

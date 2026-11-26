@@ -30,7 +30,6 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http,
                                             SessionAuthenticationFilter sessionAuthenticationFilter,
-                                            LegalAcceptanceEnforcementFilter legalAcceptanceFilter,
                                             SensitiveEndpointRateLimitFilter rateLimitFilter) throws Exception {
         CookieCsrfTokenRepository csrfRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
         csrfRepository.setCookiePath("/");
@@ -48,6 +47,11 @@ public class SecurityConfig {
                         // endpoint é autenticado pela assinatura do webhook.
                         .ignoringRequestMatchers("/api/assinaturas/prestador/webhook"))
                 .requestCache(cache -> cache.requestCache(new NullRequestCache()))
+                // O login é remontado a cada pedido a partir da sessão (SessionAuthenticationFilter).
+                // Não grava o SecurityContext na sessão: com sessões no banco, pedidos simultâneos
+                // tentavam inserir o mesmo atributo e davam erro 500 (Duplicate entry SPRING_SECURITY_CONTEXT).
+                .securityContext(context -> context.securityContextRepository(
+                        new org.springframework.security.web.context.RequestAttributeSecurityContextRepository()))
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         // O login (AuthController) já descarta a sessão antiga e cria uma nova.
@@ -95,7 +99,6 @@ public class SecurityConfig {
                         }))
                 .addFilterBefore(rateLimitFilter, AnonymousAuthenticationFilter.class)
                 .addFilterBefore(sessionAuthenticationFilter, AnonymousAuthenticationFilter.class)
-                .addFilterAfter(legalAcceptanceFilter, SessionAuthenticationFilter.class)
                 .build();
     }
 
