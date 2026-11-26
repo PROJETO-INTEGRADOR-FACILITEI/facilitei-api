@@ -62,7 +62,7 @@ class JdbcSessionIntegrationTest {
                         .content("""
                                 {"nome":"Teste Sessao","email":"%s","telefone":"31999998888","senha":"%s",
                                  "endereco":{"rua":"Rua A","numero":"1","bairro":"Centro","cidade":"BH","estado":"MG","cep":"30130010"},
-                                 "habilidades":["PINTOR","montador de  Móveis"],"servicoPrincipal":"montador de  Móveis","disponibilidade":"Seg-Sex","sobre":"Monto moveis.",
+                                 "habilidades":["PINTOR","montador de  Móveis"],"servicoPrincipal":"montador de  Móveis","disponibilidade":"Seg-Sex","sobre":"Monto moveis.","notaTrabalhador":5.0,
                                  "legalAcceptance":{"adultConfirmed":true,"documents":[
                                    {"type":"TERMS","version":"%s","sha256":"%s"},
                                    {"type":"PRIVACY","version":"%s","sha256":"%s"}]}}
@@ -83,6 +83,8 @@ class JdbcSessionIntegrationTest {
                 .andExpect(jsonPath("$[?(@.codigo == 'MONTADOR_DE_MOVEIS')].personalizada").value(org.hamcrest.Matchers.contains(true)));
         mvc.perform(get("/api/trabalhadores/buscarPorId/" + userId))
                 .andExpect(jsonPath("$.servicoPrincipal").value("MONTADOR_DE_MOVEIS"))
+                // A nota enviada no cadastro é ignorada: todo profissional começa com 0.
+                .andExpect(jsonPath("$.notaTrabalhador").value(0.0))
                 .andExpect(jsonPath("$.servicos").value(org.hamcrest.Matchers.contains("PINTOR", "MONTADOR_DE_MOVEIS")));
         assertNotNull(session, "login deve devolver o cookie da sessão em banco");
 

@@ -152,7 +152,7 @@ public class ServicoService {
     private void publicarResumoNoChat(Servico servico, SolicitacaoServico solicitacao) {
         Cliente cliente = servico.getCliente();
         StringBuilder resumo = new StringBuilder("Resumo do pedido\n");
-        resumo.append("Serviço: ").append(servico.getTitulo()).append('\n');
+        resumo.append("Pedido: ").append(servico.getTitulo()).append('\n');
         if (solicitacao != null && solicitacao.getServicoOferecido() != null
                 && solicitacao.getServicoOferecido().getPreco() != null) {
             resumo.append("Preço anunciado: R$ ")

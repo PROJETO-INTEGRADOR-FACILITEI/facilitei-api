@@ -231,7 +231,8 @@ public class TrabalhadorService {
 
         trabalhador.setNome(HtmlSanitizer.sanitize(dto.getNome()));
         trabalhador.setEmail(dto.getEmail());
-        trabalhador.setNotaTrabalhador(dto.getNotaTrabalhador());
+        // A nota começa em 0 e só muda com avaliações (não aceita valor vindo do cadastro).
+        trabalhador.setNotaTrabalhador(0.0);
         trabalhador.setSenha(passwordHashService.hash(dto.getSenha()));
         trabalhador.setDisponibilidade(dto.getDisponibilidade());
         trabalhador.setSobre(HtmlSanitizer.sanitize(dto.getSobre()));
