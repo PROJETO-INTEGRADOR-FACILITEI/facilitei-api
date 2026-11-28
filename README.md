@@ -398,20 +398,3 @@ Para acessar o banco de fora do Railway (ex.: DBeaver ou `mysqldump`), use o TCP
     </td>
   </tr>
 </table>
-
-
-## 🤖 Uso de Inteligência Artificial
-
-Parte do desenvolvimento contou com o apoio de um assistente de IA (Claude, da Anthropic, usado pelo Claude Code). A equipe definiu os requisitos a partir dos testes de usabilidade com usuários, revisou e testou as mudanças e decidiu o que entrava no projeto. Os deploys no Railway foram feitos pela equipe.
-
-A IA foi usada principalmente para:
-
-- **Correções a partir do teste de usabilidade:** trabalhos concluídos no painel do profissional, edição de perfil e foto, pedido "em análise" na tela do cliente, resumo do pedido enviado no chat ao aceitar e cancelamento do serviço pelo cliente.
-- **Profissões e serviços:** troca da lista fixa de profissões (enum) por uma tabela no banco, criação de profissões novas pelo profissional no cadastro e serviços próprios ("Meus serviços").
-- **Administração:** suspensão por tempo definido, exclusão de contas, tela de conta suspensa e telas de gestão de usuários e serviços.
-- **Chat e notificações:** cabeçalho com nome e foto da outra pessoa e notificações enviadas só a quem está fora do chat.
-- **Reputação:** nota e comentários do cliente exibidos ao profissional antes de aceitar o pedido.
-- **Erros e segurança:** mensagens de erro em português indicando o campo errado, sessões de login guardadas no banco, correção de perdas de sessão e de conflitos entre pedidos simultâneos, bloqueio da nota definida no cadastro e dados privados ocultos no perfil público.
-- **Interface:** ajustes de contraste e de layout, tela de erro amigável e padronização das avaliações.
-- **Testes automatizados:** testes de integração e de unidade para essas mudanças (JUnit/MockMvc na API e Vitest no front).
-- **Investigação:** leitura dos logs de produção e testes do fluxo completo (cadastro → pedido → chat → conclusão → avaliação) para encontrar erros.
