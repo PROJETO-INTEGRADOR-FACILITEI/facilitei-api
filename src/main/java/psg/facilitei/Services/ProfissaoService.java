@@ -17,8 +17,8 @@ import psg.facilitei.Exceptions.BusinessRuleException;
 import psg.facilitei.Repository.ProfissaoRepository;
 
 /**
- * Lista de profissões (antes era um enum fixo). Quem não se encaixa em nenhuma
- * cria a sua no cadastro e ela passa a valer para todos.
+ * Lista de profissões salva no banco. Quem não se encaixa em nenhuma cria a sua
+ * no cadastro e ela passa a valer para todos.
  */
 @Service
 public class ProfissaoService implements ApplicationRunner {
@@ -26,7 +26,7 @@ public class ProfissaoService implements ApplicationRunner {
     public static final int MAX_HABILIDADES = 30;
     public static final int MAX_NOVAS_POR_VEZ = 5;
 
-    /** Profissões da plataforma (os mesmos códigos do antigo enum TipoServico). */
+    /** Profissões da plataforma. Os códigos são os mesmos já gravados nas outras tabelas. */
     public static final Map<String, String> PADRAO = new LinkedHashMap<>();
 
     static {
@@ -107,7 +107,7 @@ public class ProfissaoService implements ApplicationRunner {
 
     /**
      * Recebe códigos (ex.: "PEDREIRO") ou nomes digitados (ex.: "Montador de móveis") e devolve
-     * os códigos. Nomes que ainda não existem viram profissões novas na lista.
+     * os códigos. O que não existir vira profissão nova, até MAX_NOVAS_POR_VEZ por chamada.
      */
     @Transactional
     public List<String> resolver(List<String> entradas, Long criadorId) {
@@ -123,6 +123,7 @@ public class ProfissaoService implements ApplicationRunner {
                 if (codigo.isEmpty()) {
                     throw new BusinessRuleException("Use só letras, números e espaços no nome da profissão \"" + texto + "\".");
                 }
+                // Pode já existir escrito de outro jeito: procura pelo código gerado e pelo nome
                 existente = repository.findById(codigo).or(() -> repository.findFirstByNomeIgnoreCase(nomeFormatado(texto)));
                 if (existente.isEmpty()) {
                     String nome = nomeFormatado(texto);

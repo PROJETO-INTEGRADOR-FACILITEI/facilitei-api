@@ -31,8 +31,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Configuração para WebSocket Nativo (ws://)
-        // Permite conexão direta do React sem fallback de SockJS
+        // WebSocket nativo, sem SockJS: o front conecta direto via ws://
         registry.addEndpoint("/buildrun-livechat-websocket")
                 .setAllowedOrigins(Arrays.stream(allowedOrigins.split(","))
                         .map(String::trim).filter(value -> !value.isBlank()).toArray(String[]::new));

@@ -91,6 +91,10 @@ public class ServicoService {
                 .orElseThrow(() -> new ResourceNotFoundException("Serviço não encontrado com ID: " + id));
     }
 
+    /**
+     * Aceite do pedido: cria o Servico, marca a solicitação como ACEITA, posta o resumo
+     * no chat e avisa o cliente. Com o checkout ligado, exige assinatura ativa do profissional.
+     */
     @Transactional
     public ServicoResponseDTO criar(ServicoRequestDTO dto) {
         Servico servico = modelMapper.map(dto, Servico.class);
@@ -146,8 +150,8 @@ public class ServicoService {
     }
 
     /**
-     * Primeira mensagem do chat: o resumo do pedido, para o profissional entender
-     * de cara o que o cliente precisa.
+     * Primeira mensagem do chat (tipo RESUMO): o resumo do pedido, para o profissional
+     * ver de cara o que o cliente precisa.
      */
     private void publicarResumoNoChat(Servico servico, SolicitacaoServico solicitacao) {
         Cliente cliente = servico.getCliente();
@@ -311,8 +315,7 @@ public class ServicoService {
             throw new ResourceNotFoundException("Serviço não encontrado para exclusão.");
         }
 
-        // Remove avaliações vinculadas e desvincula a solicitação de origem
-        // para não violar as FKs que apontam para este serviço.
+        // Tira as avaliações e solta a solicitação de origem antes, por causa das FKs
         avaliacaoServicoRepository.deleteByServicoId(id);
         solicitacaoServicoRepository.findByServicoId(id).ifPresent(solicitacao -> {
             solicitacao.setServico(null);
@@ -322,17 +325,13 @@ public class ServicoService {
         servicoRepository.deleteById(id);
     }
 
-    // Em ServicoService.java
-
     public List<ServicoResponseDTO> listarPorCliente(Long clienteId) {
-        // Você já tem o método findByClienteId no Repository, basta usar
         List<Servico> servicos = servicoRepository.findByClienteId(clienteId);
 
         return servicos.stream()
                 .map(servico -> modelMapper.map(servico, ServicoResponseDTO.class))
                 .collect(Collectors.toList());
     }
-    // Adicione este método dentro da classe ServicoService
 
     public List<ServicoResponseDTO> listarPorTrabalhador(Long trabalhadorId) {
         List<Servico> servicos = servicoRepository.findByTrabalhadorId(trabalhadorId);

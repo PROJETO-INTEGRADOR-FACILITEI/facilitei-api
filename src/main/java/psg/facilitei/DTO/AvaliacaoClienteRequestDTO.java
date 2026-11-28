@@ -21,11 +21,9 @@ public class AvaliacaoClienteRequestDTO {
     @NotNull(message = "O ID do cliente é obrigatório.")
     private Long clienteId;
 
-    // --- ADICIONE ISTO ---
     @Schema(description = "ID do serviço realizado")
     @NotNull(message = "O ID do serviço é obrigatório.")
     private Long servicoId;
-    // ---------------------
 
     @Schema(description = "Nota dada pelo trabalhador")
     @Min(value = 1, message = "A nota deve ser maior ou igual a 1.")

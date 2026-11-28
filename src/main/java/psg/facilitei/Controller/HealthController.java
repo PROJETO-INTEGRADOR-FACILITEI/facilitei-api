@@ -13,9 +13,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Healthcheck usado pela plataforma de deploy (Railway). Responde 200 somente
- * quando a aplicação consegue abrir uma conexão válida com o banco; caso
- * contrário responde 503, impedindo que um deploy sem banco receba tráfego.
+ * Healthcheck do Railway. Só responde 200 se conseguir conectar no banco,
+ * senão 503, assim um deploy sem banco não recebe tráfego.
  */
 @RestController
 public class HealthController {

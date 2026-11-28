@@ -1,9 +1,8 @@
 package psg.facilitei.Util;
 
 /**
- * Escapa caracteres HTML em texto livre fornecido pelo usuário antes de persistir,
- * como defesa em profundidade contra XSS armazenado caso algum consumidor da API
- * renderize o valor em HTML sem escapar por conta própria.
+ * Escapa HTML do texto digitado pelo usuário antes de salvar, para evitar XSS
+ * se algum lugar mostrar o valor sem escapar.
  */
 public final class HtmlSanitizer {
 

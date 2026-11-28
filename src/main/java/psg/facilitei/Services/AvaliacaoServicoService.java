@@ -38,15 +38,13 @@ public class AvaliacaoServicoService {
             throw new BusinessRuleException("Este cliente já avaliou este serviço.");
         }
 
-        // 1. Cria e Salva a Avaliação
         AvaliacaoServico avaliacao = toEntity(requestDTO);
         AvaliacaoServico savedAvaliacao = repository.save(avaliacao);
 
-        // 2. Recalcula a média do Trabalhador automaticamente
+        // A nota do profissional é a média de todas as avaliações dos serviços dele
         Trabalhador trabalhador = savedAvaliacao.getServico().getTrabalhador();
         Double media = repository.calcularMediaPorTrabalhador(trabalhador.getId());
         
-        // 3. Atualiza a nota no perfil do trabalhador
         if (media != null) {
             trabalhador.setNotaTrabalhador(media);
             trabalhadorRepository.save(trabalhador);
@@ -61,7 +59,6 @@ public class AvaliacaoServicoService {
                 .map(this::toResponseDTO).collect(Collectors.toList());
     }
 
-    // Método NOVO para listar avaliações no perfil do trabalhador
     @Transactional(readOnly = true)
     public List<AvaliacaoServicoResponseDTO> buscarAvaliacoesPorTrabalhador(Long trabalhadorId) {
         return repository.findByTrabalhadorId(trabalhadorId).stream()
@@ -72,7 +69,7 @@ public class AvaliacaoServicoService {
         AvaliacaoServico avaliacao = new AvaliacaoServico();
         avaliacao.setNota(dto.getNota());
         avaliacao.setComentario(psg.facilitei.Util.HtmlSanitizer.sanitize(dto.getComentario()));
-        avaliacao.setData(new java.util.Date()); // Garante data atual
+        avaliacao.setData(new java.util.Date());
 
         Cliente cliente = clienteRepository.findById(dto.getClienteId())
                 .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado. ID: " + dto.getClienteId()));
@@ -106,7 +103,7 @@ public class AvaliacaoServicoService {
              Long trabId = av.getServico().getTrabalhador().getId();
              repository.deleteById(id);
              
-             // Recalcula após deletar
+             // Sem avaliações a média volta para 0
              Double media = repository.calcularMediaPorTrabalhador(trabId);
              Trabalhador t = trabalhadorRepository.findById(trabId).get();
              t.setNotaTrabalhador(media != null ? media : 0.0);

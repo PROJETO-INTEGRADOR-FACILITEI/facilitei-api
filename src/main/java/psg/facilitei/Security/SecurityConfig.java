@@ -19,8 +19,8 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
 @Configuration
 public class SecurityConfig {
 
-    // Alinhados ao cookie de sessao. Cross-origin (Vercel + Render) exige
-    // SameSite=None e Secure=true para o navegador enviar o cookie CSRF.
+    // Mesmos valores do cookie de sessão. Com front e API em domínios diferentes precisa
+    // SameSite=None e Secure=true, senão o navegador não manda o cookie CSRF.
     @Value("${app.cookie.same-site:lax}")
     private String cookieSameSite;
 
@@ -31,11 +31,13 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http,
                                             SessionAuthenticationFilter sessionAuthenticationFilter,
                                             SensitiveEndpointRateLimitFilter rateLimitFilter) throws Exception {
+        // Cookie XSRF-TOKEN legível pelo JS: o front lê o valor e devolve no header X-XSRF-TOKEN
         CookieCsrfTokenRepository csrfRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
         csrfRepository.setCookiePath("/");
         csrfRepository.setCookieCustomizer(cookie -> cookie
                 .sameSite(cookieSameSite)
                 .secure(cookieSecure));
+        // Handler simples (sem a máscara XOR), assim o valor do cookie vale direto no header
         CsrfTokenRequestAttributeHandler csrfHandler = new CsrfTokenRequestAttributeHandler();
 
         return http
@@ -43,20 +45,17 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfRepository)
                         .csrfTokenRequestHandler(csrfHandler)
-                        // O provedor não possui o cookie CSRF do navegador; este
-                        // endpoint é autenticado pela assinatura do webhook.
+                        // O webhook vem do Mercado Pago, sem cookie CSRF. Ele é validado pela assinatura.
                         .ignoringRequestMatchers("/api/assinaturas/prestador/webhook"))
                 .requestCache(cache -> cache.requestCache(new NullRequestCache()))
-                // O login é remontado a cada pedido a partir da sessão (SessionAuthenticationFilter).
-                // Não grava o SecurityContext na sessão: com sessões no banco, pedidos simultâneos
-                // tentavam inserir o mesmo atributo e davam erro 500 (Duplicate entry SPRING_SECURITY_CONTEXT).
+                // O SecurityContext vive só no request e o SessionAuthenticationFilter remonta o login
+                // a cada pedido. Salvar na sessão JDBC com pedidos simultâneos dá Duplicate entry (500).
                 .securityContext(context -> context.securityContextRepository(
                         new org.springframework.security.web.context.RequestAttributeSecurityContextRepository()))
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                        // O login (AuthController) já descarta a sessão antiga e cria uma nova.
-                        // Sem isto, o Spring trocava o ID da sessão a cada pedido autenticado e
-                        // pedidos simultâneos com o ID antigo recebiam 401 ("Autenticação necessária").
+                        // O AuthController já cria uma sessão nova no login. Se o Spring trocasse o ID
+                        // a cada pedido, pedidos simultâneos com o ID antigo tomariam 401.
                         .sessionFixation(fixation -> fixation.none()))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.GET,

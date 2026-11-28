@@ -28,10 +28,8 @@ public class AvaliacaoCliente extends Avaliacao {
     @ToString.Exclude 
     private Cliente cliente;
 
-    // --- ADICIONE ISTO ---
     @Column(name = "servico_id")
     private Long servicoId; 
-    // ---------------------
 
     @Column(name = "media_cliente", nullable = false)
     private Double mediaCliente;

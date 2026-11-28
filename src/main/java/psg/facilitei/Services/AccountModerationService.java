@@ -176,7 +176,10 @@ public class AccountModerationService {
         return user;
     }
 
-    /** Reativa automaticamente quem cumpriu a punição temporária. */
+    /**
+     * Job que roda a cada minuto (app.moderation.expiry-check-ms) e reativa quem já cumpriu
+     * a suspensão. Se a pessoa tentar entrar antes, o requireNotBlocked já libera na hora.
+     */
     @Scheduled(fixedDelayString = "${app.moderation.expiry-check-ms:60000}")
     @Transactional
     public void releaseExpiredSuspensions() {

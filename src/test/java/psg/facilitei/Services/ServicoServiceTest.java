@@ -63,9 +63,8 @@ class ServicoServiceTest {
 
     @BeforeEach
     void configureModelMapper() {
-        // Mirrors psg.facilitei.Config.ModelMapperConfig so this unit test's plain
-        // ModelMapper behaves like the Spring-managed bean instead of hitting the
-        // Servico.setId() ambiguity between clienteId/trabalhadorId under LOOSE matching.
+        // Mesma config do ModelMapperConfig, senão o ModelMapper do teste se confunde no
+        // Servico.setId() entre clienteId e trabalhadorId no modo LOOSE.
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         modelMapper.createTypeMap(ServicoRequestDTO.class, Servico.class)
                 .addMappings(mapper -> {

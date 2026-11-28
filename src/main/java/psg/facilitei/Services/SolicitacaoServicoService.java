@@ -65,11 +65,10 @@ public class SolicitacaoServicoService {
     public SolicitacaoServicoResponseDTO criar(SolicitacaoServicoRequestDTO dto) {
         SolicitacaoServico solicitacao = new SolicitacaoServico();
 
-        // 1. Busca e define o Cliente
         Cliente cliente = clienteService.buscarEntidadePorId(dto.getClienteId());
         solicitacao.setCliente(cliente);
 
-        // 2. Busca e define o Trabalhador (Obrigatório nesta etapa)
+        // O profissional precisa estar ativo e, com o checkout ligado, ter assinatura em dia
         Trabalhador trabalhador = trabalhadorRepository.findById(dto.getTrabalhadorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Trabalhador não encontrado com ID: " + dto.getTrabalhadorId()));
         if (trabalhador.getAccountStatus() != AccountStatus.ACTIVE) {
@@ -82,9 +81,9 @@ public class SolicitacaoServicoService {
         }
         solicitacao.setTrabalhador(trabalhador);
 
-        // 3. Define dados da solicitação
         solicitacao.setDescricao(HtmlSanitizer.sanitize(dto.getDescricao()));
         solicitacao.setTipoServico(profissaoService == null ? dto.getTipoServico() : profissaoService.exigir(dto.getTipoServico()));
+        // Se o cliente escolheu um serviço próprio do profissional, título e categoria vêm dele
         if (dto.getServicoOferecidoId() != null) {
             var oferecido = servicoOferecidoRepository
                     .findByIdAndTrabalhadorId(dto.getServicoOferecidoId(), trabalhador.getId())
@@ -97,7 +96,7 @@ public class SolicitacaoServicoService {
         }
         solicitacao.setDataSolicitacao(LocalDateTime.now());
         
-        // 4. O serviço começa como NULL (será criado quando o trabalhador aceitar)
+        // O Servico só é criado quando o profissional aceita o pedido
         solicitacao.setServico(null);
 
         solicitacao.setStatusSolicitacao(StatusSolicitacao.PENDENTE);
@@ -110,8 +109,7 @@ public class SolicitacaoServicoService {
                         ? "“" + solicitacao.getTitulo() + "”"
                         : formatarTipo(solicitacao.getTipoServico())) + ".",
                 "/painel");
-        
-        // Mapeamento manual para garantir retorno correto dos IDs
+
         return mapToResponse(salvo);
     }
 
@@ -154,7 +152,6 @@ public class SolicitacaoServicoService {
             throw new BusinessRuleException("A solicitação já foi processada.");
         }
         existente.setStatusSolicitacao(StatusSolicitacao.RECUSADA);
-        // Adicione outras atualizações conforme necessário
 
         SolicitacaoServico atualizada = solicitacaoServicoRepository.save(existente);
         notificationService.notify(
@@ -199,7 +196,6 @@ public class SolicitacaoServicoService {
         solicitacaoServicoRepository.deleteById(id);
     }
 
-    // Helper para converter entidade para DTO
     private SolicitacaoServicoResponseDTO mapToResponse(SolicitacaoServico entity) {
         SolicitacaoServicoResponseDTO dto = new SolicitacaoServicoResponseDTO(
             entity.getId(),
@@ -220,7 +216,10 @@ public class SolicitacaoServicoService {
         return dto;
     }
 
-    /** Reputação do cliente para o profissional decidir se aceita o pedido. */
+    /**
+     * Reputação do cliente mostrada no pedido: média, total de avaliações, as 3 mais
+     * recentes e serviços concluídos. Os repositórios são opcionais por causa dos testes unitários.
+     */
     private ClienteResumoDTO resumoCliente(Cliente cliente) {
         ClienteResumoDTO resumo = new ClienteResumoDTO(cliente.getId(), cliente.getNome(), cliente.getUrlFoto());
         if (avaliacaoClienteRepository != null) {

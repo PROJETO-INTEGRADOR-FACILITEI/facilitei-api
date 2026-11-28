@@ -37,7 +37,7 @@ public class AvaliacaoServicoController {
         return ResponseEntity.ok(service.buscarAvaliacoesPorServico(servicoId));
     }
 
-    // NOVO ENDPOINT: Busca todas as avaliações recebidas por um trabalhador
+    // Avaliações que o trabalhador recebeu (aparece no perfil dele)
     @GetMapping("/trabalhador/{trabalhadorId}")
     public ResponseEntity<List<AvaliacaoServicoResponseDTO>> listarPorTrabalhador(@PathVariable Long trabalhadorId) {
         return ResponseEntity.ok(service.buscarAvaliacoesPorTrabalhador(trabalhadorId));

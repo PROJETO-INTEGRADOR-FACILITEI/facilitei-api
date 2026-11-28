@@ -42,10 +42,9 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
- * Todas as respostas de erro da API seguem o mesmo formato:
- * { status, error, message, timestamp, errors? }.
- * "message" é sempre uma frase em português que pode ser mostrada direto ao usuário;
- * "errors" (quando existe) lista cada campo com problema, para o front destacar o campo certo.
+ * Toda resposta de erro sai como { status, error, message, timestamp, errors? }.
+ * "message" já vem em português para mostrar na tela e "errors" lista os campos com problema.
+ * Conta suspensa é a exceção: usa o corpo de AccountModerationService.suspensionBody.
  */
 @ControllerAdvice
 public class GlobalExceptionHandler {

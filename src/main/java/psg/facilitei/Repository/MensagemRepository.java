@@ -8,6 +8,5 @@ import java.util.List;
 
 @Repository
 public interface MensagemRepository extends JpaRepository<Mensagem, Long> {
-    // Busca o histórico ordenado por data
     List<Mensagem> findByServicoIdOrderByDataEnvioAsc(Long servicoId);
 }

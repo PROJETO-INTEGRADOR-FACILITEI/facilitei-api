@@ -15,9 +15,8 @@ import org.springframework.web.socket.messaging.SessionUnsubscribeEvent;
 import psg.facilitei.Security.AuthenticatedPrincipal;
 
 /**
- * Sabe quem está com a tela de uma conversa aberta (inscrito no tópico do chat).
- * Quem está dentro da conversa não recebe notificação de nova mensagem: as
- * notificações valem só para quem está fora do chat.
+ * Guarda em memória quem está inscrito no tópico de cada chat. Quem está com a conversa
+ * aberta já vê a mensagem na hora, então não precisa receber notificação.
  */
 @Component
 public class ChatPresenceRegistry {
@@ -46,6 +45,7 @@ public class ChatPresenceRegistry {
 
     @EventListener
     public void onDisconnect(SessionDisconnectEvent event) {
+        // Fechando a aba nem sempre chega UNSUBSCRIBE, então limpa tudo da sessão
         String prefix = event.getSessionId() + ":";
         subscriptions.keySet().removeIf(key -> key.startsWith(prefix));
     }

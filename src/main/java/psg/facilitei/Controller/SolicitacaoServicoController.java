@@ -93,7 +93,7 @@ public class SolicitacaoServicoController {
     public ResponseEntity<SolicitacaoServicoResponseDTO> atualizarParcial(@PathVariable Long id,
             @RequestBody SolicitacaoServicoRequestDTO dto) {
         access.requireSolicitationWorker(id);
-        // Reutiliza o serviço que já trata nulos
+        // Por aqui o profissional só consegue recusar o pedido (a regra fica no service)
         SolicitacaoServicoResponseDTO atualizada = solicitacaoServicoService.atualizar(id, dto);
         return ResponseEntity.ok(atualizada);
     }

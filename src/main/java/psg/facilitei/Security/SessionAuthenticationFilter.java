@@ -16,6 +16,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import psg.facilitei.Entity.Enum.AccountStatus;
 import psg.facilitei.Repository.UsuarioRepository;
 
+/**
+ * Remonta o usuário logado a cada pedido a partir dos atributos auth.* da sessão.
+ * Busca o usuário no banco toda vez para barrar na hora conta excluída ou suspensa.
+ */
 @Component
 public class SessionAuthenticationFilter extends OncePerRequestFilter {
     private final UsuarioRepository users;
@@ -43,7 +47,7 @@ public class SessionAuthenticationFilter extends OncePerRequestFilter {
                     return;
                 }
                 if (user.isBlockedNow()) {
-                    // Mostra a punição (motivo e prazo) em vez de apenas derrubar a sessão.
+                    // Devolve 403 com motivo e prazo para o front mostrar a tela de conta suspensa
                     session.invalidate();
                     SecurityContextHolder.clearContext();
                     var body = psg.facilitei.Services.AccountModerationService.suspensionBody(

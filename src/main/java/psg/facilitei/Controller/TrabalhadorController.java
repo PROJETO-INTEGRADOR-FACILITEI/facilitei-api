@@ -127,9 +127,8 @@ public class TrabalhadorController {
 
 
         /**
-         * Perfil público: quem não é o próprio profissional (nem admin) não vê e-mail,
-         * telefone nem endereço completo — só bairro, cidade e estado. O contato acontece
-         * pelo chat depois que o pedido é aceito.
+         * Perfil público: quem não é o dono do perfil (nem admin) não vê e-mail, telefone
+         * nem endereço completo, só bairro, cidade e estado. O contato é pelo chat depois do aceite.
          */
         private TrabalhadorResponseDTO paraVisitante(TrabalhadorResponseDTO dto) {
                 if (dto == null || podeVerDadosPrivados(dto.getId())) return dto;

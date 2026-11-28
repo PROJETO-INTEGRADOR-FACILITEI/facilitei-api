@@ -231,13 +231,12 @@ public class TrabalhadorService {
 
         trabalhador.setNome(HtmlSanitizer.sanitize(dto.getNome()));
         trabalhador.setEmail(dto.getEmail());
-        // A nota começa em 0 e só muda com avaliações (não aceita valor vindo do cadastro).
+        // A nota começa em 0 e só muda com avaliações, ignora o valor do cadastro
         trabalhador.setNotaTrabalhador(0.0);
         trabalhador.setSenha(passwordHashService.hash(dto.getSenha()));
         trabalhador.setDisponibilidade(dto.getDisponibilidade());
         trabalhador.setSobre(HtmlSanitizer.sanitize(dto.getSobre()));
         trabalhador.setTelefone(dto.getTelefone());
-        // CORREÇÃO AQUI: Mapeando a URL da foto vinda do frontend
         trabalhador.setUrlFoto(dto.getAvatarUrl()); 
         
 
@@ -250,7 +249,7 @@ public class TrabalhadorService {
         endereco.setNumero(dto.getEndereco().getNumero());
         trabalhador.setEndereco(endereco);
 
-        // Profissões novas digitadas no cadastro entram na lista para todos.
+        // Profissões novas digitadas no cadastro entram na lista para todos
         trabalhador.setHabilidades(new ArrayList<>(dto.getHabilidades() == null
                 ? List.of() : resolverHabilidades(dto.getHabilidades(), null)));
         aplicarPrincipal(trabalhador, resolverProfissao(dto.getServicoPrincipal(), null));

@@ -16,10 +16,8 @@ public class AvaliacaoClienteResponseDTO {
     @Schema(description = "ID do cliente avaliado")
     private Long clienteId;
     
-    // --- ADICIONE ISTO ---
     @Schema(description = "ID do serviço")
     private Long servicoId;
-    // ---------------------
 
     @Schema(description = "Nota atribuída")
     private int nota;

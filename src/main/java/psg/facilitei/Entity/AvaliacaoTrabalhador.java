@@ -15,16 +15,13 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "Nota media do trabalhador e comentários feitos em seus serviços")
-public class AvaliacaoTrabalhador { // <-- SEM "extends Avaliacao"
+public class AvaliacaoTrabalhador {
 
-    // --- 1. ADICIONAR UM ID ---
-    // Você precisa de uma chave primária, já que não herda mais
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // --- 2. ADICIONAR O RELACIONAMENTO (A CORREÇÃO DO CRASH) ---
-    // Este é o campo 'trabalhador' que o 'mappedBy' em Trabalhador.java está procurando.
+    // Referenciado pelo mappedBy = "trabalhador" em Trabalhador
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "trabalhador_id", nullable = false)
     @EqualsAndHashCode.Exclude
@@ -37,8 +34,6 @@ public class AvaliacaoTrabalhador { // <-- SEM "extends Avaliacao"
     @ToString.Exclude
     private Cliente cliente;
 
-    // --- 3. ADICIONAR OS CAMPOS QUE ERAM HERDADOS ---
-    // Você agora precisa desses campos aqui
     @Min(1)
     @Max(5)
     @Column(name = "nota", nullable = false)
@@ -52,7 +47,7 @@ public class AvaliacaoTrabalhador { // <-- SEM "extends Avaliacao"
 
     @ElementCollection
     @CollectionTable(
-            name = "avaliacao_trabalhador_fotos", // Recomendo um nome de tabela diferente
+            name = "avaliacao_trabalhador_fotos",
             joinColumns = @JoinColumn(name = "avaliacao_id")
     )
     @Column(name = "url_foto", length = 500)

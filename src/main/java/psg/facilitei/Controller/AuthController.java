@@ -13,7 +13,7 @@ import psg.facilitei.DTO.LoginRequestDTO;
 import psg.facilitei.DTO.LoginResponseDTO;
 import psg.facilitei.DTO.ResetPasswordRequestDTO;
 import psg.facilitei.DTO.TrabalhadorResponseDTO;
-import psg.facilitei.Services.AuthService; // Vamos criar este
+import psg.facilitei.Services.AuthService;
 import psg.facilitei.Services.PasswordResetService;
 import jakarta.validation.Valid;
 import java.util.Map;

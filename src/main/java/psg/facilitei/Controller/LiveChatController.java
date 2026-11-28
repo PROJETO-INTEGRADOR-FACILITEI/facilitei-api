@@ -21,7 +21,7 @@ import psg.facilitei.Security.AuthenticatedPrincipal;
 import psg.facilitei.Exceptions.BusinessRuleException;
 
 @RestController
-@RequestMapping("/api/chat") // Endpoint REST para histórico
+@RequestMapping("/api/chat")
 public class LiveChatController {
 
     @Autowired
@@ -39,9 +39,8 @@ public class LiveChatController {
     @Autowired(required = false)
     private psg.facilitei.Services.ChatPresenceRegistry presence;
 
-    // 1. Endpoint para enviar mensagem via WebSocket
-    // O cliente manda para: /app/chat/{servicoId}
-    // O servidor distribui para quem ouve: /topics/chat/{servicoId}
+    // Via WebSocket: o cliente manda em /app/chat/{servicoId} e quem está
+    // inscrito em /topics/chat/{servicoId} recebe a mensagem salva.
     @MessageMapping("/chat/{servicoId}")
     @SendTo("/topics/chat/{servicoId}")
     public Mensagem sendMessage(@DestinationVariable Long servicoId, ChatInput input, Principal principal) {
@@ -50,13 +49,12 @@ public class LiveChatController {
         if (input.message() == null || input.message().isBlank() || input.message().length() > 2000) {
             throw new BusinessRuleException("A mensagem deve ter entre 1 e 2000 caracteres.");
         }
-        
-        // Salva no banco (Persistência)
+
         Mensagem msg = new Mensagem();
         msg.setServicoId(servicoId);
         msg.setRemetente(actor.name());
         msg.setConteudo(psg.facilitei.Util.HtmlSanitizer.sanitize(input.message()));
-        // RESUMO/SISTEMA são reservados para mensagens automáticas do Facilitei.
+        // RESUMO e SISTEMA ficam só para mensagens automáticas, o usuário não pode mandar.
         msg.setTipo("IMAGEM".equalsIgnoreCase(input.type()) ? "IMAGEM" : "TEXTO");
         msg.setUrlArquivo(input.fileUrl());
         msg.setDataEnvio(LocalDateTime.now());
@@ -69,7 +67,7 @@ public class LiveChatController {
         String preview = "IMAGEM".equalsIgnoreCase(saved.getTipo())
                 ? actor.name() + " enviou uma imagem."
                 : actor.name() + ": " + saved.getConteudo();
-        // Quem está com a conversa aberta já vê a mensagem: notifica só quem está fora do chat.
+        // Se o destinatário já está com o chat aberto ele vê a mensagem na hora, então não notifica.
         if (presence == null || !presence.isInChat(recipientId, servicoId)) {
             notificationService.notify(
                     recipientId, NotificationType.NEW_MESSAGE,
@@ -78,7 +76,7 @@ public class LiveChatController {
         return saved;
     }
 
-    // 2. Endpoint REST para carregar histórico quando abrir a tela
+    // Histórico carregado quando a tela do chat abre
     @GetMapping("/historico/{servicoId}")
     public ResponseEntity<List<Mensagem>> getHistorico(@PathVariable Long servicoId) {
         access.requireServiceParticipant(servicoId);

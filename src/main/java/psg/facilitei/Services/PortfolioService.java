@@ -121,7 +121,7 @@ public class PortfolioService {
                 try {
                     storageService.delete(imagem.getPublicId());
                 } catch (RuntimeException ignored) {
-                    // Preserva a falha original do upload.
+                    // Ignora: o erro que importa é o do upload, relançado abaixo
                 }
                 portfolio.removerImagem(imagem);
             });

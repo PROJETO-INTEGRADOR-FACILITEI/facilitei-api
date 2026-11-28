@@ -13,7 +13,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/avaliacoes-trabalhador") // URL corrigida para bater com o Front
+@RequestMapping("/api/avaliacoes-trabalhador")
 public class AvaliacaoTrabalhadorController {
 
     @Autowired

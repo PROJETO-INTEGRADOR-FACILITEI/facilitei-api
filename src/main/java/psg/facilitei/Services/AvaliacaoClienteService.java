@@ -9,7 +9,7 @@ import psg.facilitei.Entity.AvaliacaoCliente;
 import psg.facilitei.Entity.Cliente;
 import psg.facilitei.Entity.Trabalhador;
 import psg.facilitei.Exceptions.BusinessRuleException;
-import psg.facilitei.Exceptions.ResourceNotFoundException; // Importante!
+import psg.facilitei.Exceptions.ResourceNotFoundException;
 import psg.facilitei.Repository.AvaliacaoClienteRepository;
 import psg.facilitei.Repository.ClienteRepository;
 import psg.facilitei.Repository.TrabalhadorRepository;
@@ -36,25 +36,21 @@ public class AvaliacaoClienteService {
             throw new BusinessRuleException("Este trabalhador já avaliou este cliente para este serviço.");
         }
 
-        // 1. Monta a entidade (busca IDs e valida)
         AvaliacaoCliente avaliacao = toEntity(dto);
 
-        // 2. Busca avaliações anteriores para calcular a média CORRETA
-        // (Fazemos isso antes de salvar a nova para garantir o cálculo preciso)
+        // A média é calculada antes de salvar: avaliações antigas + a nota que está chegando
         List<AvaliacaoCliente> avaliacoesAntigas = avaliacaoClienteRepository.findByClienteId(dto.getClienteId());
 
         double somaNotas = avaliacoesAntigas.stream().mapToDouble(AvaliacaoCliente::getNota).sum();
-        somaNotas += dto.getNota(); // Soma a nota atual que está entrando
+        somaNotas += dto.getNota();
 
         double novaMedia = somaNotas / (avaliacoesAntigas.size() + 1);
 
-        // 3. Define a média na avaliação (snapshot histórico)
+        // Guarda a média do momento na avaliação e também atualiza o perfil do cliente
         avaliacao.setMediaCliente(novaMedia);
 
-        // 4. Salva a avaliação no banco
         AvaliacaoCliente salvo = avaliacaoClienteRepository.save(avaliacao);
 
-        // 5. ATUALIZA O PERFIL DO CLIENTE (O passo que faltava para ser 100%)
         Cliente cliente = avaliacao.getCliente();
         cliente.setNotaCliente(novaMedia);
         clienteRepository.save(cliente);
@@ -84,13 +80,10 @@ public class AvaliacaoClienteService {
         Cliente cliente = avaliacao.getCliente();
         avaliacaoClienteRepository.delete(avaliacao);
 
-        // Recalcula média após deleção (opcional, mas recomendado)
         atualizarMediaAposDelecao(cliente);
     }
 
     private AvaliacaoCliente toEntity(AvaliacaoClienteRequestDTO dto) {
-        // Usando ResourceNotFoundException para o Frontend receber 404 e não 500
-        // genérico
         Trabalhador trabalhador = trabalhadorRepository.findById(dto.getTrabalhadorId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Trabalhador não encontrado. ID: " + dto.getTrabalhadorId()));
@@ -104,7 +97,7 @@ public class AvaliacaoClienteService {
         avaliacao.setServicoId(dto.getServicoId());
         avaliacao.setNota(dto.getNota());
         avaliacao.setComentario(psg.facilitei.Util.HtmlSanitizer.sanitize(dto.getComentario()));
-        // mediaCliente é setada no método criarAvaliacao
+        // mediaCliente é preenchida em criarAvaliacao
 
         return avaliacao;
     }

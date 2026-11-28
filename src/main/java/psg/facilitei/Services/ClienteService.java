@@ -73,7 +73,7 @@ public class ClienteService {
         cliente.setNome(HtmlSanitizer.sanitize(cliente.getNome()));
         cliente.setSenha(passwordHashService.hash(dto.getSenha()));
 
-        // CORREÇÃO AQUI: Mapeando manualmente o avatarUrl do DTO para urlFoto da Entidade
+        // Nomes diferentes no DTO (avatarUrl) e na entidade (urlFoto), então copia na mão
         if (dto.getAvatarUrl() != null) {
             cliente.setUrlFoto(dto.getAvatarUrl());
         }
@@ -209,15 +209,14 @@ public class ClienteService {
             throw new ResourceNotFoundException("Cliente não encontrado para exclusão com ID: " + id);
         }
 
-        // Remove avaliações vinculadas ao cliente (como avaliador e como avaliado)
-        // para não violar as FKs que apontam para este cliente.
+        // Apaga as avaliações do cliente (feitas e recebidas) antes, por causa das FKs
         avaliacaoTrabalhadorRepository.deleteByClienteId(id);
         avaliacaoClienteRepository.deleteByClienteId(id);
         avaliacaoServicoRepository.deleteByClienteId(id);
 
         try {
             repository.deleteById(id);
-            repository.flush(); // força o DELETE a executar agora, para que a FKViolation seja capturada aqui
+            repository.flush(); // executa o DELETE agora para o erro de FK cair no catch
         } catch (DataIntegrityViolationException e) {
             throw new BusinessRuleException(
                     "Não é possível excluir um cliente com serviços ou solicitações vinculadas.");
@@ -226,7 +225,7 @@ public class ClienteService {
     }
     public void atualizarNota(Long id, Double novaNota) {
         Cliente cliente = buscarEntidadePorId(id);
-        cliente.setNotaCliente(novaNota); // Ajustado para aceitar Double
+        cliente.setNotaCliente(novaNota);
         repository.save(cliente);
     }
 }

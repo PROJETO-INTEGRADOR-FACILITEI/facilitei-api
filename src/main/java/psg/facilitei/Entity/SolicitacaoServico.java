@@ -30,7 +30,7 @@ public class SolicitacaoServico {
     @ToString.Exclude
     private Cliente cliente;
 
-    // NOVO: Vincula diretamente ao trabalhador solicitado
+    // Profissional que o cliente escolheu ao fazer o pedido
     @NotNull(message = "Trabalhador é obrigatório")
     @ManyToOne
     @JoinColumn(name = "trabalhador_id", nullable = false)
@@ -38,7 +38,7 @@ public class SolicitacaoServico {
     @ToString.Exclude
     private Trabalhador trabalhador;
 
-    // ALTERADO: Serviço agora é opcional (só existe após o trabalhador aceitar)
+    // Fica nulo até o profissional aceitar o pedido
     @OneToOne
     @JoinColumn(name = "servico_id", nullable = true)
     @EqualsAndHashCode.Exclude
